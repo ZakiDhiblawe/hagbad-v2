@@ -134,6 +134,7 @@
 
         if (isAuthed()) {
             nav.appendChild(navLink("Dashboard", dashHref, activePage === "dashboard"));
+            nav.appendChild(navLink("Groups", `${rootPrefix}pages/groups.html`, activePage === "groups" || activePage === "group_detail"));
 
             const logoutBtn = document.createElement("button");
             logoutBtn.type = "button";

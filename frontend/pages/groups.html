@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="api-base" content="http://localhost:8000" />
+  <title>Groups • Hagbad</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body data-page="groups" data-root="false">
+  <div id="app-header"></div>
+
+  <main class="container" aria-labelledby="page-title">
+    <div class="hero">
+      <h1 id="page-title">Groups</h1>
+      <p>Create and manage your savings groups.</p>
+    </div>
+
+    <section class="card" aria-label="Groups list">
+      <div class="card-header">
+        <h2>Your groups</h2>
+        <p>Filter your own groups and create new ones.</p>
+      </div>
+
+      <div class="card-body">
+        <div class="toolbar" role="group" aria-label="Group actions">
+          <label class="check">
+            <input id="mine" type="checkbox" />
+            <span>Mine only</span>
+          </label>
+
+          <div class="toolbar-right">
+            <button id="refresh" class="btn btn-secondary" type="button">Refresh</button>
+            <button id="open-create" class="btn" type="button">Create group</button>
+          </div>
+        </div>
+
+        <div id="list-status" class="hint" aria-live="polite"></div>
+
+        <ul id="groups-list" class="list" aria-label="Groups"></ul>
+
+        <div class="pager" aria-label="Pagination">
+          <button id="prev" class="btn btn-secondary" type="button">Prev</button>
+          <span id="page-label" class="hint">Page 1</span>
+          <button id="next" class="btn btn-secondary" type="button">Next</button>
+        </div>
+
+        <p class="footer-note">Tip: open a group to edit or close (creator only).</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Create Modal -->
+  <div id="modal-overlay" class="modal-overlay" hidden></div>
+  <div id="create-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="create-title" hidden>
+    <h3 id="create-title">Create group</h3>
+    <p class="hint">Name must be unique.</p>
+
+    <form id="create-form" novalidate>
+      <div id="form-error" class="form-error" role="alert" hidden></div>
+
+      <div class="field">
+        <label for="name">Group name</label>
+        <input id="name" type="text" autocomplete="off" required maxlength="120"
+               placeholder="e.g. Family Savings" aria-describedby="name-error" />
+        <p id="name-error" class="error" role="alert"></p>
+      </div>
+
+      <div class="field">
+        <label for="privacy">Privacy</label>
+        <select id="privacy" class="select" aria-label="Privacy">
+          <option value="public">Public</option>
+          <option value="private">Private</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="description">Description (optional)</label>
+        <textarea id="description" class="textarea" rows="3" maxlength="2000"
+                  placeholder="Short description"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button id="cancel" class="btn btn-secondary" type="button">Cancel</button>
+        <button id="create-submit" class="btn" type="submit">Create</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../js/app.js" defer></script>
+  <script src="../modules/user/user_api.js" defer></script>
+  <script src="../modules/group/group_api.js" defer></script>
+  <script src="../modules/group/group.js" defer></script>
+</body>
+</html>

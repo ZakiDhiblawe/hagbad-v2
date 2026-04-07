@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="api-base" content="http://localhost:8000" />
+  <title>Group • Hagbad</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body data-page="group_detail" data-root="false">
+  <div id="app-header"></div>
+
+  <main class="container" aria-labelledby="page-title">
+    <div class="hero">
+      <h1 id="page-title">Group</h1>
+      <p id="subtitle">Loading…</p>
+    </div>
+
+    <section class="card" aria-label="Group details">
+      <div class="card-header">
+        <h2 id="g-name">—</h2>
+        <p>
+          <span id="g-status" class="badge">—</span>
+          <span id="g-privacy" class="badge">—</span>
+        </p>
+      </div>
+
+      <div class="card-body">
+        <dl class="profile-grid" id="g-grid"></dl>
+
+        <div id="creator-note" class="hint" aria-live="polite"></div>
+
+        <div id="edit-area" hidden>
+          <h3 style="margin:14px 0 6px;">Edit group</h3>
+          <form id="edit-form" novalidate>
+            <div id="form-error" class="form-error" role="alert" hidden></div>
+            <div id="form-success" class="form-success" role="status" hidden></div>
+
+            <div class="field">
+              <label for="name">Name</label>
+              <input id="name" type="text" maxlength="120" aria-describedby="name-error" />
+              <p id="name-error" class="error" role="alert"></p>
+            </div>
+
+            <div class="field">
+              <label for="privacy">Privacy</label>
+              <select id="privacy" class="select">
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="description">Description</label>
+              <textarea id="description" class="textarea" rows="3" maxlength="2000"></textarea>
+            </div>
+
+            <div class="split">
+              <button id="save" class="btn" type="submit">Save changes</button>
+              <button id="close" class="btn btn-secondary" type="button">Close group</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="split" style="margin-top:16px;">
+          <button class="btn btn-secondary" type="button" onclick="APP.navigate('groups.html')">Back</button>
+          <button class="btn btn-secondary" type="button" onclick="APP.navigate('../index.html')">Home</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../js/app.js" defer></script>
+  <script src="../modules/user/user_api.js" defer></script>
+  <script src="../modules/group/group_api.js" defer></script>
+  <script src="../modules/group/group.js" defer></script>
+</body>
+</html>

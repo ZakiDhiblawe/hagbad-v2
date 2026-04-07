@@ -16,6 +16,7 @@ from utility.config import settings  # noqa: E402
 
 # Import models so Base.metadata includes tables
 from app.user import models  # noqa: F401, E402
+from app.group import models  # noqa: F401
 
 config = context.config
 
