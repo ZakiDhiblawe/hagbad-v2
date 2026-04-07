@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="api-base" content="http://localhost:8000" />
+  <title>Group Members • Hagbad</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body data-page="group_members" data-root="false">
+  <div id="app-header"></div>
+
+  <main class="container" aria-labelledby="page-title">
+    <div class="hero">
+      <h1 id="page-title">Group members</h1>
+      <p id="group-subtitle">Load members for a group.</p>
+    </div>
+
+    <section class="card" aria-label="Members list">
+      <div class="card-header">
+        <h2 id="group-name">—</h2>
+        <p>
+          <span id="group-badges" class="hint"></span>
+        </p>
+      </div>
+
+      <div class="card-body">
+        <div id="page-error" class="form-error" role="alert" hidden></div>
+
+        <div class="toolbar" role="group" aria-label="Member actions">
+          <div class="toolbar-left">
+            <label for="role-filter" class="hint" style="font-weight:800;">Role</label>
+            <select id="role-filter" class="select" aria-label="Role filter">
+              <option value="">All</option>
+              <option value="admin">Admin</option>
+              <option value="moderator">Moderator</option>
+              <option value="member">Member</option>
+            </select>
+          </div>
+
+          <div class="toolbar-right">
+            <button id="refresh" class="btn btn-secondary" type="button">Refresh</button>
+            <button id="open-add" class="btn" type="button">Add member</button>
+          </div>
+        </div>
+
+        <div id="list-status" class="hint" aria-live="polite"></div>
+
+        <ul id="members-list" class="list" aria-label="Members"></ul>
+
+        <div class="pager" aria-label="Pagination">
+          <button id="prev" class="btn btn-secondary" type="button">Prev</button>
+          <span id="page-label" class="hint">Page 1</span>
+          <button id="next" class="btn btn-secondary" type="button">Next</button>
+        </div>
+
+        <div class="split" style="margin-top:16px;">
+          <button class="btn btn-secondary" type="button" onclick="APP.navigate('groups.html')">Back to groups</button>
+          <button class="btn btn-secondary" type="button" onclick="APP.navigate('../index.html')">Home</button>
+        </div>
+
+        <p class="footer-note">Creator/admin can add members and manage roles.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Add Member Modal -->
+  <div id="modal-overlay" class="modal-overlay" hidden></div>
+  <div id="add-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="add-title" hidden>
+    <h3 id="add-title">Add member</h3>
+    <p class="hint">Enter the target user ID.</p>
+
+    <form id="add-form" novalidate>
+      <div id="form-error" class="form-error" role="alert" hidden></div>
+
+      <div class="field">
+        <label for="user_id">User ID</label>
+        <input id="user_id" type="number" min="1" step="1" required placeholder="e.g. 2"
+               aria-describedby="user_id-error" />
+        <p id="user_id-error" class="error" role="alert"></p>
+      </div>
+
+      <div class="field">
+        <label for="role">Role</label>
+        <select id="role" class="select" aria-label="Role">
+          <option value="member" selected>Member</option>
+          <option value="moderator">Moderator</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+
+      <div class="modal-actions">
+        <button id="cancel" class="btn btn-secondary" type="button">Cancel</button>
+        <button id="add-submit" class="btn" type="submit">Add</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../js/app.js" defer></script>
+  <script src="../modules/user/user_api.js" defer></script>
+  <script src="../modules/group_member/group_member_api.js" defer></script>
+  <script src="../modules/group_member/group_member.js" defer></script>
+</body>
+</html>

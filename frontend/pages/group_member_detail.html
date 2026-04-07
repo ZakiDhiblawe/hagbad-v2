@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="api-base" content="http://localhost:8000" />
+  <title>Member • Hagbad</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body data-page="group_member_detail" data-root="false">
+  <div id="app-header"></div>
+
+  <main class="container" aria-labelledby="page-title">
+    <div class="hero">
+      <h1 id="page-title">Member details</h1>
+      <p id="subtitle">Loading…</p>
+    </div>
+
+    <section class="card" aria-label="Member detail">
+      <div class="card-header">
+        <h2 id="m-title">—</h2>
+        <p id="m-badges" class="hint"></p>
+      </div>
+
+      <div class="card-body">
+        <div id="page-error" class="form-error" role="alert" hidden></div>
+
+        <dl id="grid" class="profile-grid"></dl>
+
+        <div id="perm-note" class="hint" aria-live="polite"></div>
+
+        <div id="manage" hidden>
+          <h3 style="margin:14px 0 6px;">Manage role</h3>
+          <form id="role-form" novalidate>
+            <div id="form-error" class="form-error" role="alert" hidden></div>
+            <div id="form-success" class="form-success" role="status" hidden></div>
+
+            <div class="field">
+              <label for="role">Role</label>
+              <select id="role" class="select">
+                <option value="member">Member</option>
+                <option value="moderator">Moderator</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+
+            <div class="split">
+              <button id="save" class="btn" type="submit">Save</button>
+              <button id="remove" class="btn btn-secondary" type="button">Remove member</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="split" style="margin-top:16px;">
+          <button id="back" class="btn btn-secondary" type="button">Back</button>
+          <button class="btn btn-secondary" type="button" onclick="APP.navigate('../index.html')">Home</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../js/app.js" defer></script>
+  <script src="../modules/user/user_api.js" defer></script>
+  <script src="../modules/group_member/group_member_api.js" defer></script>
+  <script src="../modules/group_member/group_member.js" defer></script>
+</body>
+</html>
