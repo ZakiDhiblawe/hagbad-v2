@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.user.models import UserStatus
 
@@ -12,6 +12,14 @@ class UserCreate(BaseModel):
     email: str = Field(..., min_length=3, max_length=255)
     password: str = Field(..., min_length=6, max_length=128)
     phone: str | None = Field(default=None, max_length=30)
+
+    @field_validator("password")
+    @classmethod
+    def password_must_fit_bcrypt_limit(cls, v: str) -> str:
+        # bcrypt accepts up to 72 BYTES, not 72 characters. citeturn1search1turn1search4
+        if len(v.encode("utf-8")) > 72:
+            raise ValueError("Password must be at most 72 bytes (bcrypt limit).")
+        return v
 
 
 class UserOut(BaseModel):

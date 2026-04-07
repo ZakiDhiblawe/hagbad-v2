@@ -1,16 +1,39 @@
 (function () {
-    async function readJsonSafely(response) {
+    async function readBodySafely(response) {
         const contentType = response.headers.get("content-type") || "";
-        if (contentType.includes("application/json")) {
-            return await response.json();
+        try {
+            if (contentType.includes("application/json")) {
+                return { kind: "json", data: await response.json() };
+            }
+            return { kind: "text", data: await response.text() };
+        } catch {
+            return { kind: "none", data: null };
         }
-        return null;
     }
 
-    function extractErrorMessage(data, fallback) {
-        if (!data) return fallback;
-        if (typeof data.detail === "string") return data.detail;
-        return fallback;
+    function extractMessage(status, body) {
+        if (!body || body.kind === "none") {
+            if (status === 500) return "Server error (500). Please try again.";
+            return `Request failed (${status}).`;
+        }
+
+        if (body.kind === "json") {
+            const d = body.data;
+
+            // FastAPI often returns {"detail": "..."} for HTTP errors
+            if (d && typeof d.detail === "string") return d.detail;
+
+            // For validation errors, detail may be an array
+            if (d && Array.isArray(d.detail)) return "Validation error. Please check your input.";
+
+            return `Request failed (${status}).`;
+        }
+
+        // text fallback – keep it short and safe
+        const text = String(body.data || "").trim();
+        if (status === 500) return "Server error (500). Please try again.";
+        if (text) return text.slice(0, 160);
+        return `Request failed (${status}).`;
     }
 
     async function request(path, options = {}) {
@@ -19,38 +42,41 @@
         let response;
         try {
             response = await fetch(url, options);
-        } catch (err) {
-            // Network error (server down, DNS, etc.)
-            throw { status: 0, message: "Network error. Is the server running?" };
+        } catch {
+            // Browser treats CORS-blocked responses and some server crashes as “network errors”. citeturn0search9
+            throw {
+                status: 0,
+                message:
+                    "Request blocked or network error. Backend may be down or returned an internal error. Check backend logs.",
+            };
         }
 
-        const data = await readJsonSafely(response);
+        const body = await readBodySafely(response);
 
         if (!response.ok) {
-            const msg = extractErrorMessage(data, `Request failed (${response.status})`);
-            throw { status: response.status, message: msg, data };
+            throw {
+                status: response.status,
+                message: extractMessage(response.status, body),
+                data: body.kind === "json" ? body.data : null,
+            };
         }
 
-        return data;
+        // Successful responses are expected to be JSON in our APIs
+        if (body.kind === "json") return body.data;
+        return null;
     }
 
     async function registerUser(payload) {
         return await request("/register", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            },
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
             body: JSON.stringify(payload),
         });
     }
 
     async function loginUser(email, password) {
-        // FastAPI OAuth2 password flow expects "username" + "password" as form fields. citeturn0search0
-        const body = new URLSearchParams({
-            username: email,
-            password: password,
-        }).toString();
+        // OAuth2 password flow expects form fields "username" and "password". citeturn0search24turn1search5
+        const body = new URLSearchParams({ username: email, password }).toString();
 
         return await request("/login", {
             method: "POST",
@@ -72,9 +98,5 @@
         });
     }
 
-    window.UserAPI = {
-        registerUser,
-        loginUser,
-        getProfile,
-    };
+    window.UserAPI = { registerUser, loginUser, getProfile };
 })();
