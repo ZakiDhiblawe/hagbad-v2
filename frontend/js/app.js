@@ -141,6 +141,11 @@
                     ["groups", "group_detail", "group_members", "group_member_detail"].includes(activePage)
                 )
             );
+            nav.appendChild(
+                navLink("Settings", `${rootPrefix}pages/group_settings.html`,
+                    ["group_settings", "group_settings_detail"].includes(activePage))
+            );
+
 
             const logoutBtn = document.createElement("button");
             logoutBtn.type = "button";

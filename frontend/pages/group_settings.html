@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="api-base" content="http://localhost:8000" />
+  <title>Group Settings • Hagbad</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body data-page="group_settings" data-root="false">
+  <div id="app-header"></div>
+
+  <main class="container" aria-labelledby="page-title">
+    <div class="hero">
+      <h1 id="page-title">Group settings</h1>
+      <p>Configure contribution rules and cycle frequency.</p>
+    </div>
+
+    <section class="card" aria-label="Select group">
+      <div class="card-header">
+        <h2>Select group</h2>
+        <p>Open with <code>?group_id=1</code> or enter a group id below.</p>
+      </div>
+      <div class="card-body">
+        <div class="input-row">
+          <input id="group_id" type="number" min="1" step="1" placeholder="Group ID" aria-label="Group ID" />
+          <button id="load" class="icon-btn" type="button">Load</button>
+        </div>
+        <p id="select-error" class="error" role="alert"></p>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Group settings" style="margin-top:16px;">
+      <div class="card-header">
+        <h2 id="group-name">—</h2>
+        <p id="perm-note" class="hint" aria-live="polite"></p>
+      </div>
+
+      <div class="card-body">
+        <div id="page-error" class="form-error" role="alert" hidden></div>
+
+        <div id="settings-view" hidden>
+          <dl id="settings-grid" class="profile-grid"></dl>
+          <div class="split" style="margin-top:16px;">
+            <button id="open-detail" class="btn btn-secondary" type="button">Open detail</button>
+            <button id="toggle-edit" class="btn" type="button">Edit</button>
+          </div>
+        </div>
+
+        <form id="settings-form" novalidate hidden>
+          <div id="form-error" class="form-error" role="alert" hidden></div>
+          <div id="form-success" class="form-success" role="status" hidden></div>
+
+          <div class="field">
+            <label for="contribution_amount">Contribution amount</label>
+            <input id="contribution_amount" type="number" min="0.01" step="0.01" required
+                   placeholder="e.g. 20.00" aria-describedby="contribution_amount-error" />
+            <p id="contribution_amount-error" class="error" role="alert"></p>
+          </div>
+
+          <div class="field">
+            <label for="frequency">Frequency</label>
+            <select id="frequency" class="select">
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="custom_days">Custom days</option>
+            </select>
+          </div>
+
+          <div class="field" id="custom-days-wrap" hidden>
+            <label for="custom_days">Custom days</label>
+            <input id="custom_days" type="number" min="1" step="1" placeholder="e.g. 10"
+                   aria-describedby="custom_days-error" />
+            <p id="custom_days-error" class="error" role="alert"></p>
+          </div>
+
+          <div class="field">
+            <label class="check">
+              <input id="allow_late" type="checkbox" />
+              <span>Allow late payments</span>
+            </label>
+          </div>
+
+          <div class="field" id="late-penalty-wrap" hidden>
+            <label for="late_penalty">Late penalty</label>
+            <input id="late_penalty" type="number" min="0" step="0.01" placeholder="e.g. 2.00"
+                   aria-describedby="late_penalty-error" />
+            <p id="late_penalty-error" class="error" role="alert"></p>
+          </div>
+
+          <div class="field">
+            <label class="check">
+              <input id="auto_start_cycle" type="checkbox" />
+              <span>Auto-start cycle</span>
+            </label>
+          </div>
+
+          <div class="split">
+            <button id="save" class="btn" type="submit">Save</button>
+            <button id="cancel" class="btn btn-secondary" type="button">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../js/app.js" defer></script>
+  <script src="../modules/user/user_api.js" defer></script>
+  <script src="../modules/group_settings/group_settings_api.js" defer></script>
+  <script src="../modules/group_settings/group_settings.js" defer></script>
+</body>
+</html>

@@ -475,3 +475,6 @@ input:focus {
 }
 .modal-actions{display:flex; gap:12px; margin-top: 14px}
 .modal-actions .btn{margin-top:0}
+
+/* Group Settings minor additions */
+code{color: var(--muted)}
