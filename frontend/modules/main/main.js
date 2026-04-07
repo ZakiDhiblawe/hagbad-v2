@@ -1,19 +1,18 @@
-function checkServer() {
-    const status = document.getElementById("status");
+(function () {
+    async function checkServer() {
+        const status = document.getElementById("status");
+        if (!status) return;
 
-    fetch("http://localhost:8000/")
-        .then(res => {
-            if (!res.ok) throw new Error();
-            return res.json();
-        })
-        .then(() => {
+        try {
+            const res = await fetch(`${window.APP.getApiBase()}/`);
+            if (!res.ok) throw new Error("server error");
             status.textContent = "Server is running";
-            status.className = "status success";
-        })
-        .catch(() => {
+            status.className = "status-pill ok";
+        } catch {
             status.textContent = "Server is DOWN";
-            status.className = "status error";
-        });
-}
+            status.className = "status-pill down";
+        }
+    }
 
-checkServer();
+    document.addEventListener("DOMContentLoaded", checkServer);
+})();

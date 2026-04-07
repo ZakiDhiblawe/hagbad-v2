@@ -1,33 +1,54 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-GB">
 
 <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="api-base" content="http://localhost:8000" />
     <title>Hagbad</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css" />
 </head>
 
-<body>
+<body data-page="home" data-root="true">
+    <div id="app-header"></div>
 
-    <div class="container">
-
-        <h1 class="title">Hagbad System</h1>
-
-        <p class="subtitle">Group Savings Platform</p>
-
-        <div id="status" class="status loading">
-            Checking server...
+    <main class="container" aria-labelledby="page-title">
+        <div class="hero">
+            <h1 id="page-title">Hagbad</h1>
+            <p>Group savings platform (Ayuuto / ROSCA)</p>
         </div>
 
-        <div class="buttons">
-            <button onclick="goToLogin()">Login</button>
-            <button onclick="goToRegister()">Register</button>
-        </div>
+        <section class="card" aria-label="Server status">
+            <div class="card-header">
+                <h2>System status</h2>
+                <p>Frontend checks backend availability.</p>
+            </div>
 
-    </div>
+            <div class="card-body" style="text-align:center;">
+                <div id="status" class="status-pill loading" aria-live="polite">Checking server…</div>
 
-    <script src="js/app.js"></script>
-    <script src="modules/main/main.js"></script>
+                <div class="split" style="margin-top:16px;">
+                    <button class="btn btn-secondary" type="button"
+                        onclick="APP.navigate('pages/login.html')">Login</button>
+                    <button class="btn" type="button" onclick="APP.navigate('pages/register.html')">Register</button>
+                </div>
 
+                <div style="margin-top:12px;">
+                    <button class="btn btn-secondary" type="button" onclick="APP.navigate('pages/dashboard.html')">
+                        Go to dashboard
+                    </button>
+                    <p class="hint" style="margin-top:10px;">
+                        If you are not logged in, dashboard will redirect you to login.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="js/app.js" defer></script>
+    <script src="modules/main/main.js" defer></script>
 </body>
 
 </html>

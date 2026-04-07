@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="api-base" content="http://localhost:8000" />
+    <title>Register • Hagbad</title>
+    <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body data-page="register" data-root="false">
+    <div id="app-header"></div>
+
+    <main class="container" aria-labelledby="page-title">
+        <div class="hero">
+            <h1 id="page-title">Create your account</h1>
+            <p>Join Hagbad and start saving with your group.</p>
+        </div>
+
+        <section class="card" aria-label="Registration form">
+            <div class="card-header">
+                <h2>Register</h2>
+                <p>All fields are required except phone.</p>
+            </div>
+
+            <div class="card-body">
+                <form id="register-form" novalidate>
+                    <div id="form-error" class="form-error" role="alert" hidden></div>
+                    <div id="form-success" class="form-success" role="status" aria-live="polite" hidden></div>
+
+                    <div class="field">
+                        <label for="full_name">Full name</label>
+                        <input id="full_name" name="full_name" type="text" autocomplete="name" required
+                            placeholder="e.g. Ahmed Osman" aria-describedby="full_name-error" />
+                        <p id="full_name-error" class="error" role="alert"></p>
+                    </div>
+
+                    <div class="field">
+                        <label for="email">Email</label>
+                        <input id="email" name="email" type="email" autocomplete="email" required
+                            placeholder="e.g. test@mail.com" aria-describedby="email-hint email-error" />
+                        <p id="email-hint" class="hint">This will be your login username.</p>
+                        <p id="email-error" class="error" role="alert"></p>
+                    </div>
+
+                    <div class="field">
+                        <label for="phone">Phone (optional)</label>
+                        <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="e.g. 0612345678"
+                            aria-describedby="phone-error" />
+                        <p id="phone-error" class="error" role="alert"></p>
+                    </div>
+
+                    <div class="field">
+                        <label for="password">Password</label>
+                        <div class="input-row">
+                            <input id="password" name="password" type="password" autocomplete="new-password" required
+                                placeholder="Minimum 6 characters" aria-describedby="password-hint password-error" />
+                            <button type="button" class="icon-btn" data-toggle-password="password">Show</button>
+                        </div>
+                        <p id="password-hint" class="hint">Choose a strong password you don’t reuse elsewhere.</p>
+                        <p id="password-error" class="error" role="alert"></p>
+                    </div>
+
+                    <div class="field">
+                        <label for="confirm_password">Confirm password</label>
+                        <div class="input-row">
+                            <input id="confirm_password" name="confirm_password" type="password"
+                                autocomplete="new-password" required placeholder="Repeat password"
+                                aria-describedby="confirm_password-error" />
+                            <button type="button" class="icon-btn" data-toggle-password="confirm_password">Show</button>
+                        </div>
+                        <p id="confirm_password-error" class="error" role="alert"></p>
+                    </div>
+
+                    <button id="register-submit" class="btn" type="submit">Create account</button>
+
+                    <p class="footer-note">
+                        Already have an account?
+                        <a href="login.html">Login</a>
+                    </p>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="../js/app.js" defer></script>
+    <script src="../modules/user/user_api.js" defer></script>
+    <script src="../modules/user/user.js" defer></script>
+</body>
+
+</html>

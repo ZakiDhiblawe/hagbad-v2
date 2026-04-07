@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="api-base" content="http://localhost:8000" />
+    <title>Dashboard • Hagbad</title>
+    <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body data-page="dashboard" data-root="false">
+    <div id="app-header"></div>
+
+    <main class="container" aria-labelledby="page-title">
+        <div class="hero">
+            <h1 id="page-title">Dashboard</h1>
+            <p>Account overview and profile.</p>
+        </div>
+
+        <section class="card" aria-label="Profile">
+            <div class="card-header">
+                <h2>Hello, <span id="profile-name">User</span></h2>
+                <p id="profile-status" class="status-pill loading" aria-live="polite">Loading profile…</p>
+            </div>
+
+            <div class="card-body">
+                <dl id="profile-grid" class="profile-grid"></dl>
+
+                <div class="split" style="margin-top:16px;">
+                    <button class="btn btn-secondary" type="button" onclick="APP.navigate('../index.html')">Back to
+                        home</button>
+                    <button class="btn" type="button"
+                        onclick="APP.clearToken(); APP.showToast('Logged out','info'); APP.navigate('login.html');">
+                        Logout
+                    </button>
+                </div>
+
+                <p class="footer-note">
+                    If your session expires, you will be asked to log in again.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="../js/app.js" defer></script>
+    <script src="../modules/user/user_api.js" defer></script>
+    <script src="../modules/user/user.js" defer></script>
+</body>
+
+</html>
