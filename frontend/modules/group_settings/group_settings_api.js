@@ -1,5 +1,5 @@
 (function () {
-  async function readJson(res) {
+  async function readBody(res) {
     const ct = res.headers.get("content-type") || "";
     if (ct.includes("application/json")) return await res.json();
     return null;
@@ -14,9 +14,9 @@
     const url = `${APP.getApiBase()}${path}`;
     let res;
     try { res = await fetch(url, options); }
-    catch { throw { status: 0, message: "Network/CORS error. Check backend." }; }
+    catch { throw { status: 0, message: "Network error. Is backend running?" }; }
 
-    const data = await readJson(res);
+    const data = await readBody(res);
     if (!res.ok) {
       const msg = data && typeof data.detail === "string" ? data.detail : `Request failed (${res.status})`;
       throw { status: res.status, message: msg, data };
@@ -24,13 +24,13 @@
     return data;
   }
 
-  async function getSettings(groupId) {
+  async function get(groupId) {
     return await request(`/group-settings/${groupId}`, {
       headers: { Accept: "application/json", ...authHeaders() },
     });
   }
 
-  async function createSettings(payload) {
+  async function create(payload) {
     return await request("/group-settings/", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json", ...authHeaders() },
@@ -38,7 +38,7 @@
     });
   }
 
-  async function updateSettings(groupId, payload) {
+  async function update(groupId, payload) {
     return await request(`/group-settings/${groupId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", Accept: "application/json", ...authHeaders() },
@@ -46,12 +46,12 @@
     });
   }
 
-  async function deleteSettings(groupId) {
+  async function remove(groupId) {
     return await request(`/group-settings/${groupId}`, {
       method: "DELETE",
       headers: { Accept: "application/json", ...authHeaders() },
     });
   }
 
-  window.GroupSettingsAPI = { getSettings, createSettings, updateSettings, deleteSettings };
+  window.GroupSettingsAPI = { get, create, update, remove };
 })();

@@ -1,17 +1,21 @@
 (function () {
   function qs(s) { return document.querySelector(s); }
-  function text(el, v) { if (el) el.textContent = v; }
   function show(el, yes) { if (el) el.hidden = !yes; }
+  function text(el, v) { if (el) el.textContent = v; }
 
-  function getParam(name) {
-    const u = new URL(window.location.href);
-    return u.searchParams.get(name);
-  }
   function getGroupId() {
-    return Number(getParam("group_id") || getParam("id") || 0);
+    const u = new URL(window.location.href);
+    return Number(u.searchParams.get("group_id") || u.searchParams.get("id") || 0);
   }
 
-  async function apiGetGroup(groupId) {
+  function setErr(id, msg) {
+    const el = qs(id);
+    if (!el) return;
+    el.hidden = !msg;
+    el.textContent = msg || "";
+  }
+
+  async function fetchGroup(groupId) {
     const res = await fetch(`${APP.getApiBase()}/groups/${groupId}`, {
       headers: { Accept: "application/json", Authorization: `Bearer ${APP.getToken()}` },
     });
@@ -20,8 +24,8 @@
     return data;
   }
 
-  async function apiMyRole(groupId, myUserId) {
-    // creator/admin check: try list members and find my row
+  async function myAdminRole(groupId, myId) {
+    // Optional: check admin for accurate UI. If it fails, fall back to creator-only.
     try {
       const qsx = new URLSearchParams({ group_id: String(groupId), page: "1", size: "100" }).toString();
       const res = await fetch(`${APP.getApiBase()}/group-members/?${qsx}`, {
@@ -29,33 +33,20 @@
       });
       if (!res.ok) return null;
       const items = await res.json();
-      const me = (items || []).find((m) => Number(m.user_id) === Number(myUserId));
+      const me = (items || []).find((m) => Number(m.user_id) === Number(myId));
       return me ? me.role : null;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   }
 
-  function setPageError(msg) {
-    const el = qs("#page-error");
-    if (!el) return;
-    el.hidden = !msg;
-    el.textContent = msg || "";
-  }
-  function setFormError(msg) {
-    const el = qs("#form-error");
-    if (!el) return;
-    el.hidden = !msg;
-    el.textContent = msg || "";
-  }
-  function setFormSuccess(msg) {
-    const el = qs("#form-success");
-    if (!el) return;
-    el.hidden = !msg;
-    el.textContent = msg || "";
+  function syncDynamicFields() {
+    const f = qs("#frequency")?.value;
+    show(qs("#custom-days-wrap"), f === "custom_days");
+    const allow = !!qs("#allow_late")?.checked;
+    show(qs("#late-penalty-wrap"), allow);
   }
 
-  function renderGrid(grid, s) {
+  function renderGrid(s) {
+    const grid = qs("#settings-grid");
     if (!grid) return;
     while (grid.firstChild) grid.removeChild(grid.firstChild);
 
@@ -76,88 +67,82 @@
     });
   }
 
-  function bindDynamicFields() {
-    const freq = qs("#frequency");
-    const cdWrap = qs("#custom-days-wrap");
-    const allowLate = qs("#allow_late");
-    const lpWrap = qs("#late-penalty-wrap");
-
-    function sync() {
-      const f = freq ? freq.value : "";
-      show(cdWrap, f === "custom_days");
-      show(lpWrap, !!(allowLate && allowLate.checked));
-    }
-    if (freq) freq.addEventListener("change", sync);
-    if (allowLate) allowLate.addEventListener("change", sync);
-    sync();
+  function fillForm(s) {
+    qs("#contribution_amount").value = s?.contribution_amount ?? "";
+    qs("#frequency").value = s?.frequency ?? "weekly";
+    qs("#custom_days").value = s?.custom_days ?? "";
+    qs("#allow_late").checked = !!s?.allow_late;
+    qs("#late_penalty").value = s?.late_penalty ?? "";
+    qs("#auto_start_cycle").checked = !!s?.auto_start_cycle;
+    syncDynamicFields();
   }
 
-  function validateForm() {
-    setFormError(""); setFormSuccess("");
+  function validate() {
+    setErr("#form-error", "");
+    setErr("#form-success", "");
 
     const amt = qs("#contribution_amount");
-    const freq = qs("#frequency");
+    const freq = qs("#frequency").value;
     const cd = qs("#custom_days");
-    const allowLate = qs("#allow_late");
+    const allowLate = qs("#allow_late").checked;
     const lp = qs("#late_penalty");
-    const auto = qs("#auto_start_cycle");
 
     let ok = true;
 
     const amountVal = Number(amt.value);
     if (!amountVal || amountVal <= 0) {
-      APP.setFieldError(amt, "Contribution amount must be > 0.");
+      APP.setFieldError(amt, "Contribution must be > 0.");
       ok = false;
     } else APP.clearFieldError(amt);
 
-    if (freq.value === "custom_days") {
+    if (freq === "custom_days") {
       const cdVal = Number(cd.value);
       if (!cdVal || cdVal < 1) {
-        APP.setFieldError(cd, "custom_days is required for custom frequency.");
+        APP.setFieldError(cd, "custom_days required for custom_days frequency.");
         ok = false;
       } else APP.clearFieldError(cd);
     } else {
-      if (cd) { cd.value = ""; APP.clearFieldError(cd); }
+      APP.clearFieldError(cd);
+      cd.value = "";
     }
 
-    if (allowLate.checked) {
+    if (allowLate) {
       if (lp.value.trim() === "") {
-        APP.setFieldError(lp, "Set late penalty (0 allowed).");
+        APP.setFieldError(lp, "Late penalty required (0 allowed).");
         ok = false;
       } else APP.clearFieldError(lp);
     } else {
-      if (lp) { lp.value = ""; APP.clearFieldError(lp); }
+      APP.clearFieldError(lp);
+      lp.value = "";
     }
 
-    if (!ok) setFormError("Please fix the highlighted fields.");
+    if (!ok) setErr("#form-error", "Please fix the highlighted fields.");
     return ok;
-
-    // note: auto checkbox is boolean, always valid
   }
 
-  function buildPayload(groupId, isCreate) {
-    const payload = {};
-    if (isCreate) payload.group_id = groupId;
+  function payload(groupId, creating) {
+    const p = {};
+    if (creating) p.group_id = groupId;
 
-    payload.contribution_amount = qs("#contribution_amount").value;
-    payload.frequency = qs("#frequency").value;
+    // Send as strings for Decimal-friendly backend parsing
+    p.contribution_amount = qs("#contribution_amount").value;
+    p.frequency = qs("#frequency").value;
 
-    if (payload.frequency === "custom_days") payload.custom_days = Number(qs("#custom_days").value);
+    if (p.frequency === "custom_days") p.custom_days = Number(qs("#custom_days").value);
 
-    payload.allow_late = !!qs("#allow_late").checked;
-    if (payload.allow_late) payload.late_penalty = qs("#late_penalty").value;
+    p.allow_late = !!qs("#allow_late").checked;
+    if (p.allow_late) p.late_penalty = qs("#late_penalty").value;
 
-    payload.auto_start_cycle = !!qs("#auto_start_cycle").checked;
-
-    return payload;
+    p.auto_start_cycle = !!qs("#auto_start_cycle").checked;
+    return p;
   }
 
-  async function initSettingsPage() {
-    if (!APP.requireAuthOrRedirect()) return;
+  async function initMainPage() {
+    const token = APP.requireAuthOrRedirect();
+    if (!token) return;
 
     const groupId = getGroupId();
-    const input = qs("#group_id");
-    if (input && groupId) input.value = String(groupId);
+    if (groupId) qs("#group_id").value = String(groupId);
 
     qs("#load").addEventListener("click", () => {
       const gid = Number(qs("#group_id").value);
@@ -167,41 +152,38 @@
 
     if (!groupId) return;
 
-    const profile = await UserAPI.getProfile(APP.getToken());
-    const group = await apiGetGroup(groupId);
-
+    const me = await UserAPI.getProfile(token);
+    const group = await fetchGroup(groupId);
     text(qs("#group-name"), group.name);
 
-    const role = await apiMyRole(groupId, profile.id);
-    const canManage = Number(group.created_by) === Number(profile.id) || role === "admin";
+    const role = await myAdminRole(groupId, me.id);
+    const canManage = Number(group.created_by) === Number(me.id) || role === "admin";
 
     text(qs("#perm-note"), canManage
       ? "You can manage settings (creator/admin)."
-      : "View only (creator/admin required to change settings).");
+      : "View only (creator/admin required).");
 
-    bindDynamicFields();
-
-    const view = qs("#settings-view");
-    const form = qs("#settings-form");
+    qs("#frequency").addEventListener("change", syncDynamicFields);
+    qs("#allow_late").addEventListener("change", syncDynamicFields);
 
     let existing = null;
+
     try {
-      existing = await GroupSettingsAPI.getSettings(groupId);
-      show(view, true);
-      renderGrid(qs("#settings-grid"), existing);
-      show(form, false);
-      qs("#toggle-edit").disabled = !canManage;
+      existing = await GroupSettingsAPI.get(groupId);
+      renderGrid(existing);
+      show(qs("#settings-view"), true);
+      show(qs("#settings-form"), false);
     } catch (e) {
       if (e.status === 404) {
-        show(view, false);
+        show(qs("#settings-view"), false);
         if (canManage) {
-          show(form, true);
-          text(qs("#perm-note"), "No settings yet. Create them below.");
+          fillForm(null);
+          show(qs("#settings-form"), true);
         } else {
-          setPageError("Settings not found for this group.");
+          setErr("#page-error", "Settings not found for this group.");
         }
       } else {
-        setPageError(e.message || "Failed to load settings.");
+        setErr("#page-error", e.message || "Failed to load settings.");
       }
     }
 
@@ -209,116 +191,95 @@
       APP.navigate(`group_settings_detail.html?group_id=${groupId}`);
     });
 
-    qs("#toggle-edit").addEventListener("click", () => {
-      if (!canManage) return;
-      show(form, true);
-      show(view, false);
-
-      // prefill from existing
-      if (existing) {
-        qs("#contribution_amount").value = existing.contribution_amount;
-        qs("#frequency").value = existing.frequency;
-        qs("#custom_days").value = existing.custom_days ?? "";
-        qs("#allow_late").checked = !!existing.allow_late;
-        qs("#late_penalty").value = existing.late_penalty ?? "";
-        qs("#auto_start_cycle").checked = !!existing.auto_start_cycle;
-        bindDynamicFields();
-      }
+    qs("#edit-btn").addEventListener("click", () => {
+      if (!canManage) { APP.showToast("Not allowed", "error"); return; }
+      fillForm(existing);
+      show(qs("#settings-form"), true);
+      show(qs("#settings-view"), false);
     });
 
     qs("#cancel").addEventListener("click", () => {
-      show(form, false);
-      show(view, true);
-      setFormError(""); setFormSuccess("");
+      show(qs("#settings-form"), false);
+      show(qs("#settings-view"), !!existing);
+      setErr("#form-error", "");
+      setErr("#form-success", "");
     });
 
-    form.addEventListener("submit", async (ev) => {
+    qs("#settings-form").addEventListener("submit", async (ev) => {
       ev.preventDefault();
-      if (!canManage) { setFormError("Not allowed."); return; }
-      if (!validateForm()) return;
+      if (!canManage) { setErr("#form-error", "Not allowed."); return; }
+      if (!validate()) return;
 
-      const btn = qs("#save");
-      APP.setButtonLoading(btn, true, "Saving…");
-
+      APP.setButtonLoading(qs("#save"), true, "Saving…");
       try {
-        const payload = buildPayload(groupId, !existing);
-        const res = existing
-          ? await GroupSettingsAPI.updateSettings(groupId, payload)
-          : await GroupSettingsAPI.createSettings(payload);
+        const p = payload(groupId, !existing);
+        existing = existing
+          ? await GroupSettingsAPI.update(groupId, p)
+          : await GroupSettingsAPI.create(p);
 
-        existing = res;
-        setFormSuccess("Saved.");
+        renderGrid(existing);
+        setErr("#form-success", "Saved.");
         APP.showToast("Settings saved", "success");
-
-        renderGrid(qs("#settings-grid"), existing);
-        show(form, false);
-        show(view, true);
+        show(qs("#settings-form"), false);
+        show(qs("#settings-view"), true);
       } catch (e) {
-        setFormError(e.message || "Save failed.");
+        setErr("#form-error", e.message || "Save failed.");
         APP.showToast(e.message || "Save failed.", "error");
       } finally {
-        APP.setButtonLoading(btn, false);
+        APP.setButtonLoading(qs("#save"), false);
       }
     });
   }
 
-  async function initSettingsDetailPage() {
-    if (!APP.requireAuthOrRedirect()) return;
+  async function initDetailPage() {
+    const token = APP.requireAuthOrRedirect();
+    if (!token) return;
 
     const groupId = getGroupId();
-    if (!groupId) { setPageError("Missing group_id."); return; }
+    if (!groupId) { setErr("#page-error", "Missing group_id."); return; }
 
-    qs("#back").addEventListener("click", () => APP.navigate(`group_settings.html?group_id=${groupId}`));
+    qs("#back").addEventListener("click", () => {
+      APP.navigate(`group_settings.html?group_id=${groupId}`);
+    });
 
-    const profile = await UserAPI.getProfile(APP.getToken());
-    const group = await apiGetGroup(groupId);
-
+    const me = await UserAPI.getProfile(token);
+    const group = await fetchGroup(groupId);
     text(qs("#group-name"), group.name);
     text(qs("#subtitle"), `Group #${groupId}`);
 
-    const role = await apiMyRole(groupId, profile.id);
-    const canManage = Number(group.created_by) === Number(profile.id) || role === "admin";
+    const role = await myAdminRole(groupId, me.id);
+    const canManage = Number(group.created_by) === Number(me.id) || role === "admin";
 
-    text(qs("#perm-note"), canManage
-      ? "You can edit/delete settings (creator/admin)."
-      : "View only.");
+    text(qs("#perm-note"), canManage ? "Creator/admin: you can edit/delete." : "View only.");
+
+    qs("#frequency").addEventListener("change", syncDynamicFields);
+    qs("#allow_late").addEventListener("change", syncDynamicFields);
 
     let s;
     try {
-      s = await GroupSettingsAPI.getSettings(groupId);
-      renderGrid(qs("#settings-grid"), s);
+      s = await GroupSettingsAPI.get(groupId);
+      renderGrid(s);
+      fillForm(s);
     } catch (e) {
-      setPageError(e.message || "Failed to load settings.");
+      setErr("#page-error", e.message || "Failed to load settings.");
       return;
     }
 
     show(qs("#manage"), canManage);
     if (!canManage) return;
 
-    bindDynamicFields();
-
-    // Prefill
-    qs("#contribution_amount").value = s.contribution_amount;
-    qs("#frequency").value = s.frequency;
-    qs("#custom_days").value = s.custom_days ?? "";
-    qs("#allow_late").checked = !!s.allow_late;
-    qs("#late_penalty").value = s.late_penalty ?? "";
-    qs("#auto_start_cycle").checked = !!s.auto_start_cycle;
-    bindDynamicFields();
-
     qs("#edit-form").addEventListener("submit", async (ev) => {
       ev.preventDefault();
-      if (!validateForm()) return;
+      if (!validate()) return;
 
       APP.setButtonLoading(qs("#save"), true, "Saving…");
       try {
-        const payload = buildPayload(groupId, false);
-        s = await GroupSettingsAPI.updateSettings(groupId, payload);
-        renderGrid(qs("#settings-grid"), s);
-        setFormSuccess("Saved.");
-        APP.showToast("Settings updated", "success");
+        s = await GroupSettingsAPI.update(groupId, payload(groupId, false));
+        renderGrid(s);
+        setErr("#form-success", "Saved.");
+        APP.showToast("Updated", "success");
       } catch (e) {
-        setFormError(e.message || "Update failed.");
+        setErr("#form-error", e.message || "Update failed.");
         APP.showToast(e.message || "Update failed.", "error");
       } finally {
         APP.setButtonLoading(qs("#save"), false);
@@ -329,8 +290,8 @@
       if (!confirm("Delete settings for this group?")) return;
       APP.setButtonLoading(qs("#del"), true, "Deleting…");
       try {
-        await GroupSettingsAPI.deleteSettings(groupId);
-        APP.showToast("Settings deleted", "success");
+        await GroupSettingsAPI.remove(groupId);
+        APP.showToast("Deleted", "success");
         APP.navigate(`group_settings.html?group_id=${groupId}`);
       } catch (e) {
         APP.showToast(e.message || "Delete failed.", "error");
@@ -342,7 +303,7 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     const page = document.body.dataset.page || "";
-    if (page === "group_settings") initSettingsPage();
-    if (page === "group_settings_detail") initSettingsDetailPage();
+    if (page === "group_settings") initMainPage();
+    if (page === "group_settings_detail") initDetailPage();
   });
 })();

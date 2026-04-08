@@ -14,13 +14,13 @@
   <main class="container" aria-labelledby="page-title">
     <div class="hero">
       <h1 id="page-title">Group settings</h1>
-      <p>Configure contribution rules and cycle frequency.</p>
+      <p>View or manage contribution rules for a group.</p>
     </div>
 
-    <section class="card" aria-label="Select group">
+    <section class="card" aria-label="Group picker">
       <div class="card-header">
-        <h2>Select group</h2>
-        <p>Open with <code>?group_id=1</code> or enter a group id below.</p>
+        <h2>Select a group</h2>
+        <p>Open with <code>?group_id=1</code> (or <code>?id=1</code>).</p>
       </div>
       <div class="card-body">
         <div class="input-row">
@@ -31,7 +31,7 @@
       </div>
     </section>
 
-    <section class="card" aria-label="Group settings" style="margin-top:16px;">
+    <section class="card" aria-label="Settings" style="margin-top:16px;">
       <div class="card-header">
         <h2 id="group-name">—</h2>
         <p id="perm-note" class="hint" aria-live="polite"></p>
@@ -44,7 +44,7 @@
           <dl id="settings-grid" class="profile-grid"></dl>
           <div class="split" style="margin-top:16px;">
             <button id="open-detail" class="btn btn-secondary" type="button">Open detail</button>
-            <button id="toggle-edit" class="btn" type="button">Edit</button>
+            <button id="edit-btn" class="btn" type="button">Edit / Create</button>
           </div>
         </div>
 

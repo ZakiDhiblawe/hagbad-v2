@@ -19,6 +19,7 @@ from app.user import models  # noqa: F401, E402
 from app.group import models  # noqa: F401
 from app.group_member import models  # noqa: F401
 from app.group_settings import models  # noqa: F401
+from app.invite import models  # noqa: F401
 
 
 config = context.config
