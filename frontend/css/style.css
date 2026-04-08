@@ -478,3 +478,7 @@ input:focus {
 
 /* Group Settings minor additions */
 code{color: var(--muted)}
+
+.jr-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.jr-card{border:1px solid var(--border);border-radius:12px;padding:12px;background:rgba(11,18,32,.35);margin:10px 0}
+.jr-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}

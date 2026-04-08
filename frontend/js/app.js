@@ -146,7 +146,13 @@
                     ["group_settings", "group_settings_detail"].includes(activePage))
             );
 
-
+            nav.appendChild(
+                navLink(
+                    "Join Requests",
+                    `${rootPrefix}pages/join_requests.html`,
+                    activePage === "join_requests"
+                )
+            );
             const logoutBtn = document.createElement("button");
             logoutBtn.type = "button";
             logoutBtn.textContent = "Logout";

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Join Requests - Hagbad</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <style>
+        .page-shell {
+            max-width: 1220px;
+            margin: 0 auto;
+            padding: 28px 18px 60px;
+        }
+
+        .page-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .page-head h1 {
+            margin: 0 0 8px;
+            font-size: 32px;
+        }
+
+        .page-head p {
+            margin: 0;
+            color: #94a3b8;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+        }
+
+        .panel {
+            background: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 18px;
+            padding: 22px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 22px;
+        }
+
+        .panel-subtitle {
+            margin: 0 0 18px;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .field label {
+            font-size: 14px;
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+
+        .field input,
+        .field select,
+        .field textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            background: #0b1220;
+            color: #f8fafc;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .field input:focus,
+        .field select:focus,
+        .field textarea:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: #1f2937;
+            color: #e5e7eb;
+            border: 1px solid #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #273244;
+        }
+
+        .btn-danger {
+            background: #b91c1c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #991b1b;
+        }
+
+        .btn-success {
+            background: #15803d;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #166534;
+        }
+
+        .btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .alert {
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .alert.error {
+            background: rgba(220, 38, 38, 0.14);
+            border: 1px solid rgba(220, 38, 38, 0.35);
+            color: #fecaca;
+        }
+
+        .alert.success {
+            background: rgba(22, 163, 74, 0.14);
+            border: 1px solid rgba(22, 163, 74, 0.35);
+            color: #bbf7d0;
+        }
+
+        .alert.info {
+            background: rgba(59, 130, 246, 0.14);
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            color: #bfdbfe;
+        }
+
+        .muted-box {
+            background: #0f172a;
+            border: 1px dashed #334155;
+            border-radius: 14px;
+            padding: 14px;
+            color: #cbd5e1;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .request-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 18px;
+        }
+
+        .request-card {
+            border: 1px solid #263244;
+            background: #0b1220;
+            border-radius: 16px;
+            padding: 16px;
+        }
+
+        .request-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .request-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 8px;
+        }
+
+        .request-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+
+        .badge-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 7px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+
+        .badge.ok {
+            background: rgba(22, 163, 74, 0.14);
+            color: #bbf7d0;
+            border-color: rgba(22, 163, 74, 0.35);
+        }
+
+        .badge.warn {
+            background: rgba(245, 158, 11, 0.14);
+            color: #fde68a;
+            border-color: rgba(245, 158, 11, 0.35);
+        }
+
+        .badge.bad {
+            background: rgba(220, 38, 38, 0.14);
+            color: #fecaca;
+            border-color: rgba(220, 38, 38, 0.35);
+        }
+
+        .badge.info {
+            background: rgba(59, 130, 246, 0.14);
+            color: #bfdbfe;
+            border-color: rgba(59, 130, 246, 0.35);
+        }
+
+        .empty-state {
+            border: 1px dashed #334155;
+            background: #0b1220;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            color: #94a3b8;
+        }
+
+        .helper-text {
+            color: #94a3b8;
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        .request-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .top-inline {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 980px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body data-page="groups">
+    <div id="app-header"></div>
+
+    <main class="page-shell">
+        <section class="page-head">
+            <div>
+                <h1>Join Requests</h1>
+                <p>Request to join private groups, or review requests for groups you manage.</p>
+            </div>
+
+            <div class="btn-row">
+                <button id="back-to-groups" class="btn btn-secondary" type="button">Back to Groups</button>
+                <button id="refresh-page" class="btn btn-secondary" type="button">Refresh</button>
+            </div>
+        </section>
+
+        <div class="layout">
+            <section class="panel">
+                <h2>My Join Requests</h2>
+                <p class="panel-subtitle">Create a request for a private group and track your own requests.</p>
+
+                <div id="my-error" class="alert error" hidden></div>
+                <div id="my-success" class="alert success" hidden></div>
+
+                <form id="create-request-form">
+                    <div class="field">
+                        <label for="group_id">Private Group ID</label>
+                        <input id="group_id" name="group_id" type="number" min="1" placeholder="Enter private group id" />
+                        <div class="helper-text">You can also open this page with <strong>?group_id=1</strong>.</div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button id="create-request-btn" class="btn btn-primary" type="submit">Send Join Request</button>
+                    </div>
+                </form>
+
+                <div class="muted-box" style="margin-top:16px;">
+                    This only works for private groups. Public groups should use a different join flow.
+                </div>
+
+                <div class="top-inline" style="margin-top:16px;">
+                    <h3 style="margin:0;">My Requests</h3>
+                    <button id="reload-my-requests" class="btn btn-secondary" type="button">Reload</button>
+                </div>
+
+                <div id="my-request-list" class="request-list"></div>
+            </section>
+
+            <section class="panel">
+                <h2>Group Review</h2>
+                <p class="panel-subtitle">Creator or admin can review pending requests for a private group.</p>
+
+                <div id="admin-error" class="alert error" hidden></div>
+                <div id="admin-success" class="alert success" hidden></div>
+                <div id="admin-info" class="alert info" hidden></div>
+
+                <div class="field">
+                    <label for="admin_group_id">Group ID to review</label>
+                    <input id="admin_group_id" type="number" min="1" placeholder="Enter group id" />
+                </div>
+
+                <div class="field">
+                    <label for="status_filter">Filter by status</label>
+                    <select id="status_filter">
+                        <option value="">All</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+
+                <div class="btn-row">
+                    <button id="load-group-requests-btn" class="btn btn-primary" type="button">Load Group Requests</button>
+                </div>
+
+                <div class="muted-box" style="margin-top:16px;">
+                    Approve or reject requests here. Approving adds the user into group members as <strong>member</strong>.
+                </div>
+
+                <div id="group-request-list" class="request-list"></div>
+            </section>
+        </div>
+    </main>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="../js/app.js"></script>
+    <script src="../modules/join_request/join_request_api.js"></script>
+    <script src="../modules/join_request/join_request.js"></script>
+</body>
+</html>

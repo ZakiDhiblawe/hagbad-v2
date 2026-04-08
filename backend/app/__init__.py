@@ -6,6 +6,7 @@ from app.group.routes import router as group_router
 from app.group_member.routes import router as group_member_router
 from app.group_settings.routes import router as group_settings_router
 from app.invite.routes import router as invite_router
+from app.join_request.routes import router as join_request_router
 
 
 def register_routes(app: FastAPI) -> None:
@@ -15,3 +16,4 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(group_member_router)
     app.include_router(group_settings_router)
     app.include_router(invite_router)
+    app.include_router(join_request_router)
