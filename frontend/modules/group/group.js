@@ -205,6 +205,16 @@
 
     const g = await GroupAPI.getGroup(id);
 
+    qs("#open-members").addEventListener("click", () => {
+      APP.navigate(`group_members.html?group_id=${id}`);
+    });
+    qs("#open-settings").addEventListener("click", () => {
+      APP.navigate(`group_settings.html?group_id=${id}`);
+    });
+    qs("#open-cycles").addEventListener("click", () => {
+      APP.navigate(`cycles.html?group_id=${id}`);
+    });
+
     text(qs("#page-title"), "Group details");
     text(qs("#subtitle"), "View or manage this group.");
     text(qs("#g-name"), g.name);

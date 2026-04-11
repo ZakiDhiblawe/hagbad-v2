@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="api-base" content="http://localhost:8000" />
+  <title>Cycles • Hagbad</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body data-page="cycles" data-root="false">
+  <div id="app-header"></div>
+
+  <main class="container" aria-labelledby="page-title">
+    <div class="hero">
+      <h1 id="page-title">Cycles</h1>
+      <p id="group-subtitle">Manage cycle rounds for a group.</p>
+    </div>
+
+    <section class="card" aria-label="Cycles list">
+      <div class="card-header">
+        <h2 id="group-name">—</h2>
+        <p id="group-note" class="hint"></p>
+        <p id="settings-hint" class="hint"></p>
+      </div>
+
+      <div class="card-body">
+        <div id="page-error" class="form-error" role="alert" hidden></div>
+
+        <div class="toolbar" role="group" aria-label="Cycle actions">
+          <div class="toolbar-left">
+            <button id="open-group" class="btn btn-secondary" type="button">Group</button>
+            <button id="open-members" class="btn btn-secondary" type="button">Members</button>
+            <button id="open-settings" class="btn btn-secondary" type="button">Settings</button>
+          </div>
+          <div class="toolbar-right">
+            <button id="refresh" class="btn btn-secondary" type="button">Refresh</button>
+            <button id="open-create" class="btn" type="button">Create cycle</button>
+          </div>
+        </div>
+
+        <div id="list-status" class="hint" aria-live="polite"></div>
+        <ul id="cycles-list" class="list" aria-label="Cycles"></ul>
+
+        <div class="pager" aria-label="Pagination">
+          <button id="prev" class="btn btn-secondary" type="button">Prev</button>
+          <span id="page-label" class="hint">Page 1</span>
+          <button id="next" class="btn btn-secondary" type="button">Next</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="modal-overlay" class="modal-overlay" hidden></div>
+  <div id="create-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="create-title" hidden>
+    <h3 id="create-title">Create cycle</h3>
+    <p class="hint">Only creator/admin can create and start or stop cycles.</p>
+
+    <form id="create-form" novalidate>
+      <div id="form-error" class="form-error" role="alert" hidden></div>
+
+      <div class="field">
+        <label for="start_date">Start date</label>
+        <input id="start_date" type="date" required />
+      </div>
+
+      <div class="field">
+        <label for="frequency">Frequency</label>
+        <select id="frequency" class="select">
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="custom_days">Custom days</option>
+        </select>
+      </div>
+
+      <div class="field" id="custom-days-wrap" hidden>
+        <label for="custom_days">Custom days</label>
+        <input id="custom_days" type="number" min="1" step="1" placeholder="e.g. 10" />
+      </div>
+
+      <div class="field">
+        <label class="check">
+          <input id="auto_start" type="checkbox" />
+          <span>Start immediately after create</span>
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button id="cancel" class="btn btn-secondary" type="button">Cancel</button>
+        <button id="create-submit" class="btn" type="submit">Create</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../js/app.js" defer></script>
+  <script src="../modules/user/user_api.js" defer></script>
+  <script src="../modules/group/group_api.js" defer></script>
+  <script src="../modules/group_member/group_member_api.js" defer></script>
+  <script src="../modules/group_settings/group_settings_api.js" defer></script>
+  <script src="../modules/cycle/cycle_api.js" defer></script>
+  <script src="../modules/cycle/cycle.js" defer></script>
+</body>
+</html>

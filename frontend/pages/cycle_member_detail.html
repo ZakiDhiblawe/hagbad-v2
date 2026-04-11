@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="api-base" content="http://localhost:8000" />
+  <title>Cycle Participant Detail • Hagbad</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body data-page="cycle_member_detail" data-root="false">
+  <div id="app-header"></div>
+
+  <main class="container" aria-labelledby="page-title">
+    <div class="hero">
+      <h1 id="page-title">Cycle participant</h1>
+      <p id="subtitle">Loading…</p>
+    </div>
+
+    <section class="card" aria-label="Cycle participant detail">
+      <div class="card-header">
+        <h2 id="participant-title">—</h2>
+        <p id="participant-note" class="hint"></p>
+      </div>
+
+      <div class="card-body">
+        <div id="page-error" class="form-error" role="alert" hidden></div>
+        <dl id="participant-grid" class="profile-grid"></dl>
+
+        <div id="manage-order" hidden>
+          <form id="order-form" class="stack" novalidate style="margin-top:16px;">
+            <div id="form-error" class="form-error" role="alert" hidden></div>
+            <div id="form-success" class="form-success" role="status" hidden></div>
+
+            <div class="field">
+              <label for="payout_order">Payout order</label>
+              <input id="payout_order" type="number" min="1" step="1" />
+            </div>
+
+            <div class="split">
+              <button id="save-order" class="btn" type="submit">Save payout order</button>
+              <button id="remove" class="btn btn-secondary" type="button">Remove participant</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="manage-received" hidden>
+          <form id="received-form" class="stack" novalidate style="margin-top:16px;">
+            <div id="received-error" class="form-error" role="alert" hidden></div>
+            <div id="received-success" class="form-success" role="status" hidden></div>
+
+            <div class="field">
+              <label class="check">
+                <input id="received" type="checkbox" />
+                <span>Marked as received</span>
+              </label>
+            </div>
+
+            <button id="save-received" class="btn" type="submit">Save received status</button>
+          </form>
+        </div>
+
+        <div class="split" style="margin-top:16px;">
+          <button id="open-payments" class="btn btn-secondary" type="button">View payments</button>
+          <button id="open-payouts" class="btn btn-secondary" type="button">View payouts</button>
+          <button id="back" class="btn btn-secondary" type="button">Back to participants</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../js/app.js" defer></script>
+  <script src="../modules/user/user_api.js" defer></script>
+  <script src="../modules/group/group_api.js" defer></script>
+  <script src="../modules/group_member/group_member_api.js" defer></script>
+  <script src="../modules/cycle/cycle_api.js" defer></script>
+  <script src="../modules/cycle_member/cycle_member_api.js" defer></script>
+  <script src="../modules/cycle_member/cycle_member.js" defer></script>
+</body>
+</html>

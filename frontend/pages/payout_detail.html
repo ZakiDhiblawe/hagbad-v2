@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="api-base" content="http://localhost:8000" />
+  <title>Payout Detail • Hagbad</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body data-page="payout_detail" data-root="false">
+  <div id="app-header"></div>
+
+  <main class="container" aria-labelledby="page-title">
+    <div class="hero">
+      <h1 id="page-title">Payout detail</h1>
+      <p id="subtitle">Loading…</p>
+    </div>
+
+    <section class="card" aria-label="Payout detail">
+      <div class="card-header">
+        <h2 id="payout-title">—</h2>
+        <p><span id="payout-status" class="badge">—</span></p>
+        <p id="payout-note" class="hint"></p>
+      </div>
+
+      <div class="card-body">
+        <div id="page-error" class="form-error" role="alert" hidden></div>
+        <dl id="payout-grid" class="profile-grid"></dl>
+
+        <div id="manage" hidden>
+          <form id="edit-form" class="stack" novalidate style="margin-top:16px;">
+            <div id="form-error" class="form-error" role="alert" hidden></div>
+            <div id="form-success" class="form-success" role="status" hidden></div>
+
+            <div class="field">
+              <label for="amount">Amount</label>
+              <input id="amount" type="number" min="0.01" step="0.01" />
+            </div>
+
+            <div class="field">
+              <label for="notes">Record notes</label>
+              <textarea id="notes" class="textarea" rows="3" maxlength="2000"></textarea>
+            </div>
+
+            <div class="field">
+              <label for="decision_notes">Decision notes</label>
+              <textarea id="decision_notes" class="textarea" rows="3" maxlength="2000"></textarea>
+            </div>
+
+            <div class="split" style="flex-wrap:wrap;">
+              <button id="save" class="btn" type="submit">Save changes</button>
+              <button id="approve" class="btn btn-secondary" type="button">Approve</button>
+              <button id="reject" class="btn btn-secondary" type="button">Reject</button>
+              <button id="mark-paid" class="btn btn-secondary" type="button">Mark paid</button>
+              <button id="delete" class="btn btn-secondary" type="button">Delete</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="split" style="margin-top:16px;">
+          <button id="back" class="btn btn-secondary" type="button">Back to payouts</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../js/app.js" defer></script>
+  <script src="../modules/user/user_api.js" defer></script>
+  <script src="../modules/group/group_api.js" defer></script>
+  <script src="../modules/group_member/group_member_api.js" defer></script>
+  <script src="../modules/cycle/cycle_api.js" defer></script>
+  <script src="../modules/payout/payout_api.js" defer></script>
+  <script src="../modules/payout/payout.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="api-base" content="http://localhost:8000" />
+  <title>Payment Detail • Hagbad</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body data-page="payment_detail" data-root="false">
+  <div id="app-header"></div>
+
+  <main class="container" aria-labelledby="page-title">
+    <div class="hero">
+      <h1 id="page-title">Payment detail</h1>
+      <p id="subtitle">Loading…</p>
+    </div>
+
+    <section class="card" aria-label="Payment detail">
+      <div class="card-header">
+        <h2 id="payment-title">—</h2>
+        <p><span id="payment-status" class="badge">—</span></p>
+        <p id="payment-note" class="hint"></p>
+      </div>
+
+      <div class="card-body">
+        <div id="page-error" class="form-error" role="alert" hidden></div>
+        <dl id="payment-grid" class="profile-grid"></dl>
+
+        <div id="manage" hidden>
+          <form id="edit-form" class="stack" novalidate style="margin-top:16px;">
+            <div id="form-error" class="form-error" role="alert" hidden></div>
+            <div id="form-success" class="form-success" role="status" hidden></div>
+
+            <div class="field">
+              <label for="due_date">Due date</label>
+              <input id="due_date" type="date" />
+            </div>
+
+            <div class="field">
+              <label for="amount_due">Amount due</label>
+              <input id="amount_due" type="number" min="0.01" step="0.01" />
+            </div>
+
+            <div class="field">
+              <label for="amount_paid">Amount paid</label>
+              <input id="amount_paid" type="number" min="0" step="0.01" />
+            </div>
+
+            <div class="field">
+              <label for="paid_at">Paid at</label>
+              <input id="paid_at" type="datetime-local" />
+            </div>
+
+            <div class="field">
+              <label for="notes">Notes</label>
+              <textarea id="notes" class="textarea" rows="3" maxlength="2000"></textarea>
+            </div>
+
+            <div class="split">
+              <button id="save" class="btn" type="submit">Save changes</button>
+              <button id="delete" class="btn btn-secondary" type="button">Delete unpaid record</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="split" style="margin-top:16px;">
+          <button id="open-payouts" class="btn btn-secondary" type="button">View payouts</button>
+          <button id="back" class="btn btn-secondary" type="button">Back to payments</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../js/app.js" defer></script>
+  <script src="../modules/user/user_api.js" defer></script>
+  <script src="../modules/group/group_api.js" defer></script>
+  <script src="../modules/group_member/group_member_api.js" defer></script>
+  <script src="../modules/cycle/cycle_api.js" defer></script>
+  <script src="../modules/payment/payment_api.js" defer></script>
+  <script src="../modules/payment/payment.js" defer></script>
+</body>
+</html>

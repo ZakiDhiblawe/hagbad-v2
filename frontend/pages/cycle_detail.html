@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="api-base" content="http://localhost:8000" />
+  <title>Cycle Detail • Hagbad</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body data-page="cycle_detail" data-root="false">
+  <div id="app-header"></div>
+
+  <main class="container" aria-labelledby="page-title">
+    <div class="hero">
+      <h1 id="page-title">Cycle detail</h1>
+      <p id="subtitle">Loading…</p>
+    </div>
+
+    <section class="card" aria-label="Cycle detail">
+      <div class="card-header">
+        <h2 id="cycle-title">—</h2>
+        <p>
+          <span id="cycle-status" class="badge">—</span>
+        </p>
+        <p id="group-name" class="hint"></p>
+        <p id="cycle-note" class="hint"></p>
+      </div>
+
+      <div class="card-body">
+        <div id="page-error" class="form-error" role="alert" hidden></div>
+        <dl id="cycle-grid" class="profile-grid"></dl>
+
+        <div class="split" style="margin-top:16px; flex-wrap:wrap;">
+          <button id="open-participants" class="btn btn-secondary" type="button">Cycle participants</button>
+          <button id="open-payments" class="btn btn-secondary" type="button">Payments</button>
+          <button id="open-payouts" class="btn btn-secondary" type="button">Payouts</button>
+        </div>
+
+        <div id="manage" hidden>
+          <div class="split" style="margin-top:16px;">
+            <button id="start" class="btn" type="button">Start</button>
+            <button id="pause" class="btn btn-secondary" type="button">Pause</button>
+            <button id="complete" class="btn btn-secondary" type="button">Complete</button>
+          </div>
+
+          <form id="edit-form" class="stack" novalidate style="margin-top:16px;">
+            <div id="form-error" class="form-error" role="alert" hidden></div>
+            <div id="form-success" class="form-success" role="status" hidden></div>
+
+            <div class="field">
+              <label for="edit-frequency">Frequency</label>
+              <select id="edit-frequency" class="select">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="custom_days">Custom days</option>
+              </select>
+            </div>
+
+            <div class="field" id="edit-custom-days-wrap" hidden>
+              <label for="edit-custom_days">Custom days</label>
+              <input id="edit-custom_days" type="number" min="1" step="1" placeholder="e.g. 10" />
+            </div>
+
+            <div class="field">
+              <label for="edit-end_date">End date</label>
+              <input id="edit-end_date" type="date" />
+            </div>
+
+            <button id="save" class="btn" type="submit">Save changes</button>
+          </form>
+        </div>
+
+        <div class="split" style="margin-top:16px;">
+          <button id="back" class="btn btn-secondary" type="button">Back to cycles</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../js/app.js" defer></script>
+  <script src="../modules/user/user_api.js" defer></script>
+  <script src="../modules/group/group_api.js" defer></script>
+  <script src="../modules/group_member/group_member_api.js" defer></script>
+  <script src="../modules/cycle/cycle_api.js" defer></script>
+  <script src="../modules/cycle/cycle.js" defer></script>
+</body>
+</html>

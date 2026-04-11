@@ -138,7 +138,7 @@
                 navLink(
                     "Groups",
                     `${rootPrefix}pages/groups.html`,
-                    ["groups", "group_detail", "group_members", "group_member_detail"].includes(activePage)
+                    ["groups", "group_detail", "group_members", "group_member_detail", "cycles", "cycle_detail", "cycle_members", "cycle_member_detail", "payments", "payment_detail", "payouts", "payout_detail"].includes(activePage)
                 )
             );
             nav.appendChild(

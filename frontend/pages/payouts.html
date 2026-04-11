@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="api-base" content="http://localhost:8000" />
+  <title>Payouts • Hagbad</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body data-page="payouts" data-root="false">
+  <div id="app-header"></div>
+
+  <main class="container" aria-labelledby="page-title">
+    <div class="hero">
+      <h1 id="page-title">Payouts</h1>
+      <p id="cycle-subtitle">Admin approval and payout completion records.</p>
+    </div>
+
+    <section id="summary-card" class="card" aria-label="Payout summary" hidden>
+      <div class="card-header">
+        <h2>Cycle payout summary</h2>
+        <p id="permissions-note" class="hint"></p>
+      </div>
+      <div class="card-body">
+        <div id="summary-error" class="form-error" role="alert" hidden></div>
+        <div id="summary-grid" class="stats-grid"></div>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Payouts">
+      <div class="card-header">
+        <h2 id="cycle-title">—</h2>
+        <p id="permissions-note-main" class="hint"></p>
+        <p class="hint">End-to-end payout records for cycle completion.</p>
+      </div>
+
+      <div class="card-body">
+        <div id="page-error" class="form-error" role="alert" hidden></div>
+
+        <div class="toolbar" role="group" aria-label="Payout actions">
+          <div class="toolbar-left">
+            <button id="open-cycle" class="btn btn-secondary" type="button">Cycle</button>
+            <button id="open-payments" class="btn btn-secondary" type="button">Payments</button>
+          </div>
+          <div class="toolbar-right">
+            <button id="refresh" class="btn btn-secondary" type="button">Refresh</button>
+            <button id="open-create" class="btn" type="button">Create payout</button>
+          </div>
+        </div>
+
+        <div class="stack" style="margin-top:12px;">
+          <select id="cycle_member_id" class="select" aria-label="Filter by participant"></select>
+          <select id="status-filter" class="select" aria-label="Filter by payout status">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="paid">Paid</option>
+          </select>
+        </div>
+
+        <div id="list-status" class="hint" aria-live="polite"></div>
+        <ul id="payouts-list" class="list" aria-label="Payouts"></ul>
+
+        <div class="pager" aria-label="Pagination">
+          <button id="prev" class="btn btn-secondary" type="button">Prev</button>
+          <span id="page-label" class="hint">Page 1</span>
+          <button id="next" class="btn btn-secondary" type="button">Next</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="modal-overlay" class="modal-overlay" hidden></div>
+  <div id="create-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="create-title" hidden>
+    <h3 id="create-title">Create payout</h3>
+    <p class="hint">Create one payout record for one cycle participant.</p>
+
+    <form id="create-form" novalidate>
+      <div id="form-error" class="form-error" role="alert" hidden></div>
+
+      <div class="field">
+        <label for="create_cycle_member_id">Cycle participant</label>
+        <select id="create_cycle_member_id" class="select"></select>
+      </div>
+
+      <div class="field">
+        <label for="create_amount">Amount</label>
+        <input id="create_amount" type="number" min="0.01" step="0.01" />
+      </div>
+
+      <div class="field">
+        <label for="create_notes">Notes</label>
+        <textarea id="create_notes" class="textarea" rows="3" maxlength="2000"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button id="cancel" class="btn btn-secondary" type="button">Cancel</button>
+        <button id="create-submit" class="btn" type="submit">Create</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../js/app.js" defer></script>
+  <script src="../modules/user/user_api.js" defer></script>
+  <script src="../modules/group/group_api.js" defer></script>
+  <script src="../modules/group_member/group_member_api.js" defer></script>
+  <script src="../modules/cycle/cycle_api.js" defer></script>
+  <script src="../modules/cycle_member/cycle_member_api.js" defer></script>
+  <script src="../modules/payout/payout_api.js" defer></script>
+  <script src="../modules/payout/payout.js" defer></script>
+</body>
+</html>

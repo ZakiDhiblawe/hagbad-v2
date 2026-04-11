@@ -395,6 +395,7 @@ input:focus {
   flex-wrap:wrap;
   margin-bottom: 10px;
 }
+.toolbar-left{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
 .toolbar-right{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
 .check{display:flex; gap:10px; align-items:center; color:var(--muted); font-weight:700}
 .check input{width:auto}
@@ -415,6 +416,17 @@ input:focus {
 .list-title{font-weight:800}
 .list-meta{color:var(--muted); font-size: 13px; margin-top:4px}
 .list-empty{color:var(--muted); padding:10px}
+.list-actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+.stack{display:grid; gap:12px}
+.stats-grid{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px}
+.stat-card{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px;
+  background:rgba(11,18,32,.35);
+}
+.stat-label{color:var(--muted); font-size:12px; font-weight:700}
+.stat-value{margin-top:6px; font-size:20px; font-weight:800}
 
 .pager{
   display:flex;

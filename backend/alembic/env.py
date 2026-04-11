@@ -23,6 +23,8 @@ from app.invite import models  # noqa: F401
 from app.join_request import models  # noqa: F401
 from app.cycle import models  # noqa: F401
 from app.cycle_member import models  # noqa: F401
+from app.payment import models  # noqa: F401
+from app.payout import models  # noqa: F401
 
 config = context.config
 

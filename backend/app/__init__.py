@@ -8,6 +8,8 @@ from app.invite.routes import router as invite_router
 from app.join_request.routes import router as join_request_router
 from app.cycle.routes import router as cycle_router
 from app.cycle_member.routes import router as cycle_member_router
+from app.payment.routes import router as payment_router
+from app.payout.routes import router as payout_router
 
 def register_routes(app: FastAPI) -> None:
     app.include_router(main_router)
@@ -19,3 +21,5 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(join_request_router)
     app.include_router(cycle_router)
     app.include_router(cycle_member_router)
+    app.include_router(payment_router)
+    app.include_router(payout_router)

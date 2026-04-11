@@ -47,5 +47,6 @@ class CycleOut(BaseModel):
     start_date: date
     end_date: date | None
     frequency: CycleFrequency
+    custom_days: int | None
     status: CycleStatus
     created_at: datetime
