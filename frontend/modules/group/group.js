@@ -1,5 +1,5 @@
 (function () {
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 5;
 
   function qs(sel) { return document.querySelector(sel); }
   function text(el, v) { if (el) el.textContent = v; }
@@ -7,6 +7,11 @@
   function getGroupIdFromUrl() {
     const u = new URL(window.location.href);
     return u.searchParams.get("id");
+  }
+
+  function getGroupModeFromUrl() {
+    const u = new URL(window.location.href);
+    return u.searchParams.get("mode");
   }
 
   function setFormError(msg) {
@@ -83,14 +88,51 @@
         left.appendChild(title);
         left.appendChild(meta);
 
-        const a = document.createElement("a");
-        a.className = "btn btn-secondary";
-        a.style.width = "auto";
-        a.href = `group_detail.html?id=${g.id}`;
-        a.textContent = "Open";
+        const actions = document.createElement("div");
+        actions.className = "list-actions";
+
+        const openLink = document.createElement("a");
+        openLink.className = "btn btn-secondary";
+        openLink.style.width = "auto";
+        openLink.href = `group_detail.html?id=${g.id}`;
+        openLink.textContent = "Open";
+
+        actions.appendChild(openLink);
+
+        const editLink = document.createElement("a");
+        editLink.className = "btn btn-secondary";
+        editLink.style.width = "auto";
+        editLink.href = `group_detail.html?id=${g.id}&mode=edit`;
+        editLink.textContent = "Edit";
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "btn btn-secondary";
+        deleteBtn.style.width = "auto";
+        deleteBtn.type = "button";
+        deleteBtn.textContent = "Delete";
+        deleteBtn.addEventListener("click", async () => {
+          const confirmed = window.confirm(`Are you sure you want to delete "${g.name}"?`);
+          if (!confirmed) return;
+
+          APP.setButtonLoading(deleteBtn, true, "Deleting…");
+          try {
+            await GroupAPI.deleteGroup(g.id);
+            APP.showToast(`Deleted "${g.name}"`, "success");
+            const shouldGoBack = page > 1 && list.children.length === 1;
+            if (shouldGoBack) page -= 1;
+            await load();
+          } catch (e) {
+            APP.showToast(e.message || "Failed to delete group.", "error");
+          } finally {
+            APP.setButtonLoading(deleteBtn, false);
+          }
+        });
+
+        actions.appendChild(editLink);
+        actions.appendChild(deleteBtn);
 
         li.appendChild(left);
-        li.appendChild(a);
+        li.appendChild(actions);
         list.appendChild(li);
       });
     }
@@ -195,6 +237,7 @@
     if (!APP.requireAuthOrRedirect()) return;
 
     const id = getGroupIdFromUrl();
+    const mode = getGroupModeFromUrl();
     if (!id) {
       APP.showToast("Missing group id", "error");
       return;
@@ -211,12 +254,17 @@
     qs("#open-settings").addEventListener("click", () => {
       APP.navigate(`group_settings.html?group_id=${id}`);
     });
+    qs("#open-review").addEventListener("click", () => {
+      APP.navigate(`join_requests.html?group_id=${id}`);
+    });
     qs("#open-cycles").addEventListener("click", () => {
       APP.navigate(`cycles.html?group_id=${id}`);
     });
 
-    text(qs("#page-title"), "Group details");
-    text(qs("#subtitle"), "View or manage this group.");
+    const isEditMode = mode === "edit";
+
+    text(qs("#page-title"), isEditMode ? "Edit group" : "Group details");
+    text(qs("#subtitle"), isEditMode ? "Update this group." : "View this group.");
     text(qs("#g-name"), g.name);
 
     const statusBadge = qs("#g-status");
@@ -251,8 +299,13 @@
       return;
     }
 
-    text(note, "You are the creator. You can edit or close this group.");
-    editArea.hidden = false;
+    text(note, isEditMode
+      ? "You are editing this group."
+      : "You are the creator. Use the Edit action from the groups list to change this group."
+    );
+    editArea.hidden = !isEditMode;
+
+    if (!isEditMode) return;
 
     // Prefill edit form
     qs("#name").value = g.name;

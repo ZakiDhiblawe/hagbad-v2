@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -151,6 +152,44 @@ def list_group_join_requests(
     require_group_admin_or_creator(db, group, current_user.id)
 
     query = db.query(JoinRequest).filter(JoinRequest.group_id == group.id)
+
+    if status_filter is not None:
+        query = query.filter(JoinRequest.status == status_filter)
+
+    return query.order_by(JoinRequest.requested_at.desc()).all()
+
+
+@router.get("/managed", response_model=list[JoinRequestOut])
+def list_managed_join_requests(
+    status_filter: JoinRequestStatus | None = Query(default=None, alias="status"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[JoinRequest]:
+    managed_group_ids = [
+        group_id
+        for (group_id,) in (
+            db.query(Group.id)
+            .outerjoin(
+                GroupMember,
+                (GroupMember.group_id == Group.id)
+                & (GroupMember.user_id == current_user.id)
+                & (GroupMember.role == GroupMemberRole.admin),
+            )
+            .filter(
+                or_(
+                    Group.created_by == current_user.id,
+                    GroupMember.id.isnot(None),
+                )
+            )
+            .distinct()
+            .all()
+        )
+    ]
+
+    if not managed_group_ids:
+        return []
+
+    query = db.query(JoinRequest).filter(JoinRequest.group_id.in_(managed_group_ids))
 
     if status_filter is not None:
         query = query.filter(JoinRequest.status == status_filter)

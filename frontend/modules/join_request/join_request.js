@@ -1,4 +1,10 @@
 (function () {
+    const AUTO_REFRESH_MS = 5000;
+
+    let myRequestsTimer = null;
+    let groupRequestsTimer = null;
+    let lastReviewedGroupId = null;
+
     function qs(sel) {
         return document.querySelector(sel);
     }
@@ -29,6 +35,14 @@
         setBox("#admin-error", "");
         setBox("#admin-success", "");
         setBox("#admin-info", "");
+    }
+
+    function hasMyRequestsUI() {
+        return !!qs("#create-request-form") && !!qs("#my-request-list");
+    }
+
+    function hasGroupReviewUI() {
+        return !!qs("#admin_group_id") && !!qs("#group-request-list");
     }
 
     function badgeForStatus(status) {
@@ -315,6 +329,7 @@
     }
 
     async function loadMyRequests() {
+        if (!hasMyRequestsUI()) return;
         setBox("#my-error", "");
         try {
             const items = await JoinRequestAPI.listMyJoinRequests();
@@ -329,23 +344,25 @@
     }
 
     async function loadGroupRequests(groupId) {
-        if (!groupId || groupId < 1) {
-            qs("#group-request-list").innerHTML = "";
-            qs("#group-request-list").appendChild(makeEmptyState("Enter a valid group id to review requests."));
-            return;
-        }
+        if (!hasGroupReviewUI()) return;
+        lastReviewedGroupId = groupId || null;
 
         setBox("#admin-error", "");
         setBox("#admin-success", "");
-        setBox("#admin-info", "Loading group requests...");
+        setBox("#admin-info", groupId && groupId > 0 ? "Loading group requests..." : "Loading requests for your groups...");
 
         const statusValue = qs("#status_filter").value;
 
         try {
-            const group = await safeFetchGroup(groupId);
-            setBox("#admin-info", `Reviewing join requests for: ${group.name} (Group #${group.id})`);
-
-            const items = await JoinRequestAPI.listGroupJoinRequests(groupId, statusValue);
+            let items;
+            if (groupId && groupId > 0) {
+                const group = await safeFetchGroup(groupId);
+                setBox("#admin-info", `Reviewing join requests for: ${group.name} (Group #${group.id})`);
+                items = await JoinRequestAPI.listGroupJoinRequests(groupId, statusValue);
+            } else {
+                setBox("#admin-info", "Reviewing requests for all groups you manage.");
+                items = await JoinRequestAPI.listManagedJoinRequests(statusValue);
+            }
             renderGroupRequests(items, groupId);
         } catch (err) {
             if (handleAuthError(err)) return;
@@ -358,6 +375,32 @@
             const mount = qs("#group-request-list");
             mount.innerHTML = "";
             mount.appendChild(makeEmptyState("Could not load group requests."));
+        }
+    }
+
+    function startAutoRefresh() {
+        stopAutoRefresh();
+
+        myRequestsTimer = window.setInterval(() => {
+            if (document.hidden) return;
+            loadMyRequests();
+        }, AUTO_REFRESH_MS);
+
+        groupRequestsTimer = window.setInterval(() => {
+            if (document.hidden) return;
+            if (!lastReviewedGroupId) return;
+            loadGroupRequests(lastReviewedGroupId);
+        }, AUTO_REFRESH_MS);
+    }
+
+    function stopAutoRefresh() {
+        if (myRequestsTimer) {
+            window.clearInterval(myRequestsTimer);
+            myRequestsTimer = null;
+        }
+        if (groupRequestsTimer) {
+            window.clearInterval(groupRequestsTimer);
+            groupRequestsTimer = null;
         }
     }
 
@@ -393,22 +436,28 @@
     }
 
     function wireButtons() {
-        qs("#back-to-groups").addEventListener("click", () => {
-            APP.navigate("../pages/groups.html");
-        });
+        const backBtn = qs("#back-to-groups");
+        if (backBtn) {
+            backBtn.addEventListener("click", () => {
+                APP.navigate("../pages/groups.html");
+            });
+        }
 
-        qs("#refresh-page").addEventListener("click", () => {
-            window.location.reload();
-        });
+        const refreshBtn = qs("#refresh-page");
+        if (refreshBtn) {
+            refreshBtn.addEventListener("click", () => {
+                loadMyRequests();
+                if (lastReviewedGroupId) loadGroupRequests(lastReviewedGroupId);
+            });
+        }
 
-        qs("#reload-my-requests").addEventListener("click", () => {
-            loadMyRequests();
-        });
-
-        qs("#load-group-requests-btn").addEventListener("click", () => {
-            const groupId = Number(qs("#admin_group_id").value);
-            loadGroupRequests(groupId);
-        });
+        const loadReviewBtn = qs("#load-group-requests-btn");
+        if (loadReviewBtn) {
+            loadReviewBtn.addEventListener("click", () => {
+                const groupId = Number(qs("#admin_group_id").value);
+                loadGroupRequests(groupId);
+            });
+        }
     }
 
     function init() {
@@ -422,15 +471,32 @@
         const adminGroupIdInput = qs("#admin_group_id");
 
         if (groupIdFromUrl && groupIdFromUrl > 0) {
-            groupIdInput.value = groupIdFromUrl;
-            adminGroupIdInput.value = groupIdFromUrl;
-            setBox("#admin-info", `Group #${groupIdFromUrl} loaded from URL.`);
-            loadGroupRequests(groupIdFromUrl);
+            if (groupIdInput) groupIdInput.value = groupIdFromUrl;
+            if (adminGroupIdInput) {
+                adminGroupIdInput.value = groupIdFromUrl;
+                setBox("#admin-info", `Group #${groupIdFromUrl} loaded from URL.`);
+                loadGroupRequests(groupIdFromUrl);
+            }
+        } else if (adminGroupIdInput) {
+            loadGroupRequests(0);
         }
 
-        qs("#create-request-form").addEventListener("submit", handleCreateJoinRequest);
+        const createForm = qs("#create-request-form");
+        if (createForm) {
+            createForm.addEventListener("submit", handleCreateJoinRequest);
+        }
 
         loadMyRequests();
+        startAutoRefresh();
+
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) {
+                loadMyRequests();
+                if (lastReviewedGroupId) loadGroupRequests(lastReviewedGroupId);
+            }
+        });
+
+        window.addEventListener("beforeunload", stopAutoRefresh);
     }
 
     document.addEventListener("DOMContentLoaded", init);

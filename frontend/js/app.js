@@ -148,6 +148,14 @@
 
             nav.appendChild(
                 navLink(
+                    "Group Review",
+                    `${rootPrefix}pages/group_review.html`,
+                    activePage === "group_review"
+                )
+            );
+
+            nav.appendChild(
+                navLink(
                     "Join Requests",
                     `${rootPrefix}pages/join_requests.html`,
                     activePage === "join_requests"

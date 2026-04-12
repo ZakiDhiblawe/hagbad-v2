@@ -63,5 +63,12 @@
     });
   }
 
-  window.GroupAPI = { listGroups, createGroup, getGroup, updateGroup, closeGroup };
+  async function deleteGroup(groupId) {
+    return await request(`/groups/${groupId}`, {
+      method: "DELETE",
+      headers: { Accept: "application/json", ...authHeaders() },
+    });
+  }
+
+  window.GroupAPI = { listGroups, createGroup, getGroup, updateGroup, closeGroup, deleteGroup };
 })();

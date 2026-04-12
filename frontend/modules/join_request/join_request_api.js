@@ -69,6 +69,20 @@
         });
     }
 
+    async function listManagedJoinRequests(statusValue = "") {
+        const qs = new URLSearchParams();
+        if (statusValue) qs.set("status", statusValue);
+
+        const suffix = qs.toString() ? `?${qs.toString()}` : "";
+        return await request(`/join-requests/managed${suffix}`, {
+            method: "GET",
+            headers: {
+                Accept: "application/json",
+                ...authHeaders(),
+            },
+        });
+    }
+
     async function getJoinRequest(requestId) {
         return await request(`/join-requests/${requestId}`, {
             method: "GET",
@@ -105,6 +119,7 @@
         createJoinRequest,
         listMyJoinRequests,
         listGroupJoinRequests,
+        listManagedJoinRequests,
         getJoinRequest,
         decideJoinRequest,
         cancelJoinRequest,
