@@ -21,7 +21,6 @@ class Settings(BaseSettings):
         default="postgresql://postgres:admin123@localhost:5432/hagbad"
     )
     secret_key: str = Field(default="CHANGE_ME_IN_PRODUCTION")
-    access_token_expire_minutes: int = Field(default=30)
 
     # Development convenience only (turn OFF when using Alembic migrations)
     auto_create_tables: bool = Field(default=False)

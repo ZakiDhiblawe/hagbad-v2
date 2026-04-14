@@ -1,4 +1,27 @@
 (function () {
+  function appendMaybe(body, key, value) {
+    if (value === undefined) return;
+    if (value === null) {
+      body.append(key, "");
+      return;
+    }
+    body.append(key, value);
+  }
+
+  function buildGroupFormData(payload = {}) {
+    const body = new FormData();
+    appendMaybe(body, "name", payload.name);
+    appendMaybe(body, "description", payload.description);
+    appendMaybe(body, "privacy", payload.privacy);
+    if (payload.visible !== undefined) body.append("visible", String(Boolean(payload.visible)));
+    if (payload.status !== undefined) appendMaybe(body, "status", payload.status);
+    if (payload.groupImageFile) body.append("group_image", payload.groupImageFile);
+    if (payload.coverImageFile) body.append("cover_image", payload.coverImageFile);
+    if (payload.removeGroupImage) body.append("remove_group_image", "true");
+    if (payload.removeCoverImage) body.append("remove_cover_image", "true");
+    return body;
+  }
+
   async function readJson(response) {
     const ct = response.headers.get("content-type") || "";
     if (ct.includes("application/json")) return await response.json();
@@ -25,20 +48,25 @@
     return { Authorization: `Bearer ${token}` };
   }
 
-  async function listGroups({ mine = false, page = 1, size = 20 } = {}) {
-    const qs = new URLSearchParams({
+  async function listGroups({ mine = false, explore = false, page = 1, size = 20, search = "", role = "", managed = false } = {}) {
+    const params = new URLSearchParams({
       mine: String(mine),
+      explore: String(explore),
+      managed: String(Boolean(managed)),
       page: String(page),
       size: String(size),
-    }).toString();
+    });
+    if (search && String(search).trim()) params.set("search", String(search).trim());
+    if (role && String(role).trim()) params.set("role", String(role).trim());
+    const qs = params.toString();
     return await request(`/groups/?${qs}`, { headers: { Accept: "application/json", ...authHeaders() } });
   }
 
   async function createGroup(payload) {
     return await request("/groups/", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json", ...authHeaders() },
-      body: JSON.stringify(payload),
+      headers: { Accept: "application/json", ...authHeaders() },
+      body: buildGroupFormData(payload),
     });
   }
 
@@ -51,13 +79,20 @@
   async function updateGroup(groupId, payload) {
     return await request(`/groups/${groupId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", Accept: "application/json", ...authHeaders() },
-      body: JSON.stringify(payload),
+      headers: { Accept: "application/json", ...authHeaders() },
+      body: buildGroupFormData(payload),
     });
   }
 
   async function closeGroup(groupId) {
     return await request(`/groups/${groupId}/close`, {
+      method: "POST",
+      headers: { Accept: "application/json", ...authHeaders() },
+    });
+  }
+
+  async function joinGroup(groupId) {
+    return await request(`/groups/${groupId}/join`, {
       method: "POST",
       headers: { Accept: "application/json", ...authHeaders() },
     });
@@ -70,5 +105,5 @@
     });
   }
 
-  window.GroupAPI = { listGroups, createGroup, getGroup, updateGroup, closeGroup, deleteGroup };
+  window.GroupAPI = { listGroups, createGroup, getGroup, updateGroup, closeGroup, joinGroup, deleteGroup };
 })();

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="api-base" content="http://localhost:8000" />
+    <title>Add New Group | Hagbad</title>
+    <link rel="shortcut icon" type="image/png" href="../assets/images/logos/favicon.png" />
+    <link rel="stylesheet" href="../assets/css/styles.min.css" />
+    <link rel="stylesheet" href="../css/portal.css" />
+</head>
+
+<body data-page="add_group" data-root="false" class="portal-body dashboard-body">
+    <div class="page-wrapper" id="main-wrapper" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+        data-sidebar-position="fixed" data-header-position="fixed">
+        <aside class="left-sidebar">
+            <div>
+                <div class="brand-logo d-flex align-items-center justify-content-between">
+                    <a href="dashboard.html" class="dashboard-brand">
+                        <span class="dashboard-brand-icon-wrap">
+                            <img src="../assets/images/logos/favicon.png" alt="Hagbad icon" class="dashboard-brand-icon" />
+                        </span>
+                        <span class="portal-brand-copy">
+                            <span class="portal-brand-name">Hagbad</span>
+                            <span class="portal-brand-subtitle">Member workspace</span>
+                        </span>
+                    </a>
+                    <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
+                        <i class="ti ti-x fs-6"></i>
+                    </div>
+                </div>
+
+                <nav class="sidebar-nav scroll-sidebar" aria-label="Sidebar">
+                    <ul id="sidebarnav">
+                        <li class="nav-small-cap">
+                            <span class="hide-menu">Workspace</span>
+                        </li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link primary-hover-bg" href="dashboard.html" aria-expanded="false">
+                                <i class="ti ti-layout-dashboard"></i>
+                                <span class="hide-menu">Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="nav-small-cap">
+                            <span class="hide-menu">Groups</span>
+                        </li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link primary-hover-bg" href="my_groups.html" aria-expanded="false">
+                                <i class="ti ti-layout-grid"></i>
+                                <span class="hide-menu">My Groups</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link primary-hover-bg" href="explore_groups.html" aria-expanded="false">
+                                <i class="ti ti-compass"></i>
+                                <span class="hide-menu">Explore Groups</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link primary-hover-bg active" href="add_group.html" aria-expanded="false">
+                                <i class="ti ti-plus"></i>
+                                <span class="hide-menu">Add New Group</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <div class="body-wrapper">
+            <header class="app-header">
+                <nav class="navbar navbar-expand-lg navbar-light dashboard-topbar">
+                    <div class="container-fluid p-0">
+                        <div class="d-flex align-items-center gap-3">
+                            <a class="nav-link d-xl-none p-0 sidebartoggler" href="javascript:void(0)" aria-label="Toggle sidebar">
+                                <i class="ti ti-menu-2 fs-7"></i>
+                            </a>
+                            <div class="workspace-page-copy">
+                                <div class="portal-mini-title">Hagbad workspace</div>
+                                <h1>Add New Group</h1>
+                            </div>
+                        </div>
+
+                        <div id="workspace-user-menu" class="ms-auto"></div>
+                    </div>
+                </nav>
+            </header>
+
+            <div class="container-fluid py-4">
+                <section class="dashboard-hero groups-hero groups-page-hero">
+                    <div>
+                        <span class="eyebrow text-white mb-3">Create a group</span>
+                        <h2>Set the look, privacy, and visibility before you launch.</h2>
+                        <p>
+                            Upload a group photo and a cover photo, review the live preview, and create the group
+                            with yourself added as the admin member automatically.
+                        </p>
+                    </div>
+                    <div class="groups-hero-actions">
+                        <a class="btn portal-btn-secondary" href="my_groups.html">Back to My Groups</a>
+                        <a class="btn portal-btn-secondary" href="explore_groups.html">Explore Groups</a>
+                    </div>
+                </section>
+
+                <div class="row g-4 mt-1 align-items-start">
+                    <div class="col-12 col-xl-7">
+                        <section class="dashboard-panel card group-create-page-panel">
+                            <div class="card-body">
+                                <div class="dashboard-panel-title">
+                                    <div>
+                                        <h3>Group setup</h3>
+                                        <p>Choose how the group appears in the workspace before members arrive.</p>
+                                    </div>
+                                </div>
+
+                                <form id="create-form" class="group-create-form" novalidate>
+                                    <div id="form-error" class="form-error" role="alert" hidden></div>
+                                    <div id="form-success" class="form-success" role="status" hidden></div>
+
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label for="name" class="form-label">Group name</label>
+                                            <input id="name" class="form-control portal-input" type="text" maxlength="120"
+                                                placeholder="Enter the group name" aria-describedby="name-error" />
+                                            <p id="name-error" class="field-error" role="alert"></p>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="privacy" class="form-label">Privacy</label>
+                                            <select id="privacy" class="form-select portal-input" aria-label="Group privacy">
+                                                <option value="public">Public</option>
+                                                <option value="private">Private</option>
+                                            </select>
+                                            <p class="field-hint">Public groups allow direct joins. Private groups use join requests.</p>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label class="form-label d-block">Visibility</label>
+                                            <div class="group-toggle-card">
+                                                <div class="form-check form-switch m-0">
+                                                    <input id="visible" class="form-check-input" type="checkbox" checked />
+                                                    <label for="visible" class="form-check-label">Visible in workspace explore list</label>
+                                                </div>
+                                                <p class="field-hint mb-0">Turn this off to keep the group out of Explore Groups.</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label for="description" class="form-label">Description</label>
+                                            <textarea id="description" class="form-control portal-input" rows="4" maxlength="2000"
+                                                placeholder="Describe who the group is for and how it works"></textarea>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="group_image" class="form-label">Group photo</label>
+                                            <input id="group_image" class="form-control portal-input" type="file"
+                                                accept=".jpg,.jpeg,.png,.webp,.gif,image/*" />
+                                            <p class="field-hint">Used as the main square image across the workspace.</p>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="cover_image" class="form-label">Cover photo</label>
+                                            <input id="cover_image" class="form-control portal-input" type="file"
+                                                accept=".jpg,.jpeg,.png,.webp,.gif,image/*" />
+                                            <p class="field-hint">Used as the wide banner image on group cards.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="portal-modal-actions">
+                                        <button id="create-submit" class="btn portal-btn-primary" type="submit">Create group</button>
+                                        <button id="create-reset" class="btn portal-btn-secondary" type="reset">Clear form</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="col-12 col-xl-5">
+                        <section class="dashboard-panel card group-preview-panel">
+                            <div class="card-body">
+                                <div class="dashboard-panel-title">
+                                    <div>
+                                        <h3>Live preview</h3>
+                                        <p>Uploaded images and group details update here as you edit the form.</p>
+                                    </div>
+                                </div>
+
+                                <article class="group-card group-preview-card">
+                                    <div id="group-preview-cover" class="group-card-cover no-image">
+                                        <span id="group-preview-initials" class="group-card-cover-fallback">HG</span>
+                                    </div>
+                                    <img id="group-preview-image" class="group-card-avatar"
+                                        src="../assets/images/logos/favicon.png" alt="Group image preview" />
+
+                                    <div class="group-card-body">
+                                        <div class="group-card-top">
+                                            <h3 id="group-preview-name" class="group-card-title">New group name</h3>
+                                            <span class="group-card-date">Preview</span>
+                                        </div>
+
+                                        <p id="group-preview-description" class="group-card-description">
+                                            Add a short group description to help members understand the purpose.
+                                        </p>
+
+                                        <div class="group-card-badges">
+                                            <span id="group-preview-privacy" class="group-card-badge public">Public</span>
+                                            <span id="group-preview-visible" class="group-card-badge visible">Visible</span>
+                                            <span class="group-card-badge active">Active</span>
+                                        </div>
+
+                                        <div id="group-preview-meta" class="group-card-meta">
+                                            You will become the admin member as soon as this group is created.
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <div class="group-upload-meta-grid">
+                                    <div class="group-upload-meta-card">
+                                        <span>Group photo</span>
+                                        <strong id="group-image-file-name">No file selected</strong>
+                                    </div>
+                                    <div class="group-upload-meta-card">
+                                        <span>Cover photo</span>
+                                        <strong id="cover-image-file-name">No file selected</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="../assets/libs/jquery/dist/jquery.min.js"></script>
+    <script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/app.min.js"></script>
+    <script src="../assets/js/sidebarmenu.js"></script>
+    <script src="../js/app.js" defer></script>
+    <script src="../modules/user/user_api.js" defer></script>
+    <script src="../modules/group/group_api.js" defer></script>
+    <script src="../modules/group/group.js" defer></script>
+</body>
+</html>

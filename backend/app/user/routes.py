@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from pathlib import Path
 import re
 from typing import Final
+from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -28,6 +30,7 @@ PROFILE_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_IMAGE_EXTENSIONS: Final[set[str]] = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 MAX_PROFILE_IMAGE_BYTES: Final[int] = 5 * 1024 * 1024
 PHONE_PATTERN: Final[re.Pattern[str]] = re.compile(r"^[0-9+\-\s()]{6,30}$")
+MAX_SESSION_HOURS: Final[int] = 720
 
 
 def _normalize_profile_extension(upload: UploadFile) -> str:
@@ -90,6 +93,26 @@ async def _save_profile_image(user_id: int, upload: UploadFile, existing_path: s
     return new_path
 
 
+def _parse_session_hours(raw_value: str | None) -> int | None:
+    value = (raw_value or "").strip()
+    if not value:
+        return None
+
+    if not value.isdigit():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Session hours must be a whole number or blank",
+        )
+
+    hours = int(value)
+    if hours < 1 or hours > MAX_SESSION_HOURS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Session hours must be between 1 and {MAX_SESSION_HOURS}",
+        )
+    return hours
+
+
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(payload: UserCreate, db: Session = Depends(get_db)) -> User:
     existing = db.query(User).filter(User.email == payload.email).first()
@@ -103,6 +126,7 @@ def register(payload: UserCreate, db: Session = Depends(get_db)) -> User:
         full_name=payload.full_name,
         email=payload.email,
         phone=payload.phone,
+        session_hours=None,
         password=get_password_hash(payload.password),
         status=UserStatus.active,
     )
@@ -144,8 +168,26 @@ def login(
             detail="User is banned",
         )
 
-    access_token = create_access_token({"sub": user.email})
+    session_id = uuid4().hex
+    user.active_session_id = session_id
+    db.commit()
+
+    expires_delta = None
+    if user.session_hours is not None:
+        expires_delta = timedelta(hours=user.session_hours)
+
+    access_token = create_access_token({"sub": user.email, "sid": session_id}, expires_delta=expires_delta)
     return Token(access_token=access_token, token_type="bearer")
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    current_user.active_session_id = None
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/profile", response_model=UserOut)
@@ -157,6 +199,7 @@ def profile(current_user: User = Depends(get_current_user)) -> User:
 async def update_profile(
     full_name: str = Form(...),
     phone: str | None = Form(default=None),
+    session_hours: str | None = Form(default=None),
     image: UploadFile | None = File(default=None),
     remove_image: bool = Form(default=False),
     db: Session = Depends(get_db),
@@ -177,6 +220,7 @@ async def update_profile(
             detail="Phone number must be 6 to 30 characters and contain only digits or + - ( )",
         )
     current_user.phone = phone
+    current_user.session_hours = _parse_session_hours(session_hours)
 
     if remove_image:
         _delete_profile_image(current_user.profile_image)

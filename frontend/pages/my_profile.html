@@ -41,10 +41,25 @@
                                 <span class="hide-menu">Dashboard</span>
                             </a>
                         </li>
+                        <li class="nav-small-cap">
+                            <span class="hide-menu">Groups</span>
+                        </li>
                         <li class="sidebar-item">
-                            <a class="sidebar-link primary-hover-bg" href="groups.html" aria-expanded="false">
-                                <i class="ti ti-users-group"></i>
-                                <span class="hide-menu">Groups</span>
+                            <a class="sidebar-link primary-hover-bg" href="my_groups.html" aria-expanded="false">
+                                <i class="ti ti-layout-grid"></i>
+                                <span class="hide-menu">My Groups</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link primary-hover-bg" href="explore_groups.html" aria-expanded="false">
+                                <i class="ti ti-compass"></i>
+                                <span class="hide-menu">Explore Groups</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link primary-hover-bg" href="add_group.html" aria-expanded="false">
+                                <i class="ti ti-plus"></i>
+                                <span class="hide-menu">Add New Group</span>
                             </a>
                         </li>
                     </ul>
@@ -132,6 +147,15 @@
                                             <input id="profile_phone" class="form-control portal-input" type="text"
                                                 placeholder="Enter your phone number" aria-describedby="profile_phone-error" />
                                             <p id="profile_phone-error" class="field-error" role="alert"></p>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="profile_session_hours" class="form-label">Session hours</label>
+                                            <input id="profile_session_hours" class="form-control portal-input" type="number"
+                                                min="1" max="720" step="1" placeholder="Leave blank for no expiry"
+                                                aria-describedby="profile_session_hours-error" />
+                                            <p id="profile_session_hours-error" class="field-error" role="alert"></p>
+                                            <p class="field-hint">Blank means stay signed in until logout or a new login on another session.</p>
                                         </div>
 
                                         <div class="col-md-6">

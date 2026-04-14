@@ -102,10 +102,11 @@
         });
     }
 
-    async function updateProfile(token, { fullName, phone = null, imageFile = null, removeImage = false }) {
+    async function updateProfile(token, { fullName, phone = null, sessionHours = null, imageFile = null, removeImage = false }) {
         const body = new FormData();
         body.append("full_name", fullName);
         body.append("phone", phone || "");
+        body.append("session_hours", sessionHours === null || sessionHours === undefined ? "" : String(sessionHours));
         if (imageFile) body.append("image", imageFile);
         if (removeImage) body.append("remove_image", "true");
 
@@ -127,5 +128,12 @@
         });
     }
 
-    window.UserAPI = { registerUser, loginUser, getProfile, updateProfile, updatePassword };
+    async function logoutUser(token) {
+        return await request("/logout", {
+            method: "POST",
+            headers: authHeaders(token),
+        });
+    }
+
+    window.UserAPI = { registerUser, loginUser, getProfile, updateProfile, updatePassword, logoutUser };
 })();

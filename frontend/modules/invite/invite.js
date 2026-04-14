@@ -322,7 +322,7 @@
         const refreshBtn = qs("#refresh-page");
 
         backBtn.addEventListener("click", () => {
-            APP.navigate("../pages/groups.html");
+            APP.navigate("../pages/my_groups.html");
         });
 
         refreshBtn.addEventListener("click", () => {

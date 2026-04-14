@@ -89,8 +89,10 @@ env
 Copy
 DATABASE_URL="postgresql://postgres:admin123@localhost:5432/hagbad"
 SECRET_KEY="CHANGE_ME__GENERATE_REAL_SECRET"
-ACCESS_TOKEN_EXPIRE_MINUTES=30
 AUTO_CREATE_TABLES=false
+You can also copy `backend/.env.example` as the starting template.
+
+Token expiry is no longer configured in `.env`. Each user can set optional session hours from the profile page. If left blank, the session stays active until logout or until a newer login replaces it.
 Generate a strong secret:
 
 bash

@@ -3,6 +3,7 @@ from __future__ import annotations
 from enum import Enum
 
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     ForeignKey,
@@ -39,6 +40,9 @@ class Group(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(120), nullable=False)
     description = Column(Text, nullable=True)
+    visible = Column(Boolean, nullable=False, default=True)
+    group_image = Column(String(255), nullable=True)
+    cover_image = Column(String(255), nullable=True)
 
     privacy = Column(
         SAEnum(GroupPrivacy, name="group_privacy"),

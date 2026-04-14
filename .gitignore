@@ -20,6 +20,10 @@ venv/
 # Uploaded user files
 backend/files/profile/*
 !backend/files/profile/.gitkeep
+backend/files/groups/profile/*
+!backend/files/groups/profile/.gitkeep
+backend/files/groups/cover/*
+!backend/files/groups/cover/.gitkeep
 
 # VS Code
 .vscode/

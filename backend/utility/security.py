@@ -16,8 +16,6 @@ from utility.config import settings
 ALGORITHM = "HS256"
 
 SECRET_KEY = settings.secret_key
-ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -41,10 +39,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (
-        expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-    to_encode.update({"exp": expire})
+    if expires_delta is not None:
+        expire = datetime.now(timezone.utc) + expires_delta
+        to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -61,13 +58,17 @@ def get_current_user(
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str | None = payload.get("sub")
-        if not email:
+        session_id: str | None = payload.get("sid")
+        if not email or not session_id:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
     user = db.query(User).filter(User.email == email).first()
     if not user:
+        raise credentials_exception
+
+    if not user.active_session_id or user.active_session_id != session_id:
         raise credentials_exception
 
     if user.status == UserStatus.banned:

@@ -59,8 +59,33 @@
             </div>
 
             <div class="field">
+              <label class="check">
+                <input id="visible" type="checkbox" />
+                <span>Visible in public list</span>
+              </label>
+            </div>
+
+            <div class="field">
               <label for="description">Description</label>
               <textarea id="description" class="textarea" rows="3" maxlength="2000"></textarea>
+            </div>
+
+            <div class="field">
+              <label for="group_image">Group photo</label>
+              <input id="group_image" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/*" />
+              <label class="check" style="margin-top:8px;">
+                <input id="remove_group_image" type="checkbox" />
+                <span>Remove current group photo</span>
+              </label>
+            </div>
+
+            <div class="field">
+              <label for="cover_image">Cover photo</label>
+              <input id="cover_image" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/*" />
+              <label class="check" style="margin-top:8px;">
+                <input id="remove_cover_image" type="checkbox" />
+                <span>Remove current cover photo</span>
+              </label>
             </div>
 
             <div class="split">
@@ -71,7 +96,7 @@
         </div>
 
         <div class="split" style="margin-top:16px;">
-          <button class="btn btn-secondary" type="button" onclick="APP.navigate('groups.html')">Back</button>
+          <button class="btn btn-secondary" type="button" onclick="APP.navigate('my_groups.html')">Back</button>
           <button class="btn btn-secondary" type="button" onclick="APP.navigate('../index.html')">Home</button>
         </div>
       </div>

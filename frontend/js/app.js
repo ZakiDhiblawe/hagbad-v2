@@ -176,6 +176,25 @@
         setFieldError(input, "");
     }
 
+    async function logout() {
+        const token = getToken();
+        if (token) {
+            try {
+                await fetch(buildApiUrl("/logout"), {
+                    method: "POST",
+                    headers: {
+                        "Accept": "application/json",
+                        "Authorization": `Bearer ${token}`,
+                    },
+                });
+            } catch {
+                // Best-effort logout. If the backend is unavailable we still clear local state.
+            }
+        }
+
+        clearToken();
+    }
+
     function buildUserMenu(profile, { compact = false } = {}) {
         const rootPrefix = getRootPrefix();
         const wrapper = document.createElement("details");
@@ -232,8 +251,8 @@
         logoutBtn.type = "button";
         logoutBtn.className = "user-menu-link primary-action";
         logoutBtn.textContent = "Logout";
-        logoutBtn.addEventListener("click", () => {
-            clearToken();
+        logoutBtn.addEventListener("click", async () => {
+            await logout();
             showToast("Logged out", "info");
             navigate(`${rootPrefix}index.html`);
         });
@@ -301,6 +320,7 @@
         const loginHref = `${rootPrefix}pages/login.html`;
         const registerHref = `${rootPrefix}pages/register.html`;
         const dashHref = `${rootPrefix}pages/dashboard.html`;
+        const myGroupsHref = `${rootPrefix}pages/my_groups.html`;
 
         nav.appendChild(navLink("Home", indexHref, activePage === "home"));
 
@@ -309,8 +329,8 @@
             nav.appendChild(
                 navLink(
                     "Groups",
-                    `${rootPrefix}pages/groups.html`,
-                    ["groups", "group_detail", "group_members", "group_member_detail", "cycles", "cycle_detail", "cycle_members", "cycle_member_detail", "payments", "payment_detail", "payouts", "payout_detail"].includes(activePage)
+                    myGroupsHref,
+                    ["groups", "my_groups", "explore_groups", "add_group", "group_detail", "group_members", "group_member_detail", "cycles", "cycle_detail", "cycle_members", "cycle_member_detail", "payments", "payment_detail", "payouts", "payout_detail"].includes(activePage)
                 )
             );
             nav.appendChild(
@@ -387,6 +407,7 @@
         setButtonLoading,
         setFieldError,
         clearFieldError,
+        logout,
         renderHeader,
         requireAuthOrRedirect,
     };

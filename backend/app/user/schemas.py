@@ -30,6 +30,7 @@ class UserOut(BaseModel):
     email: str
     phone: str | None = None
     profile_image: str | None = None
+    session_hours: int | None = None
     status: UserStatus
     created_at: datetime
 

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="api-base" content="http://localhost:8000" />
+    <title>Explore Groups | Hagbad</title>
+    <link rel="shortcut icon" type="image/png" href="../assets/images/logos/favicon.png" />
+    <link rel="stylesheet" href="../assets/css/styles.min.css" />
+    <link rel="stylesheet" href="../css/portal.css" />
+</head>
+
+<body data-page="explore_groups" data-root="false" class="portal-body dashboard-body">
+    <div class="page-wrapper" id="main-wrapper" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+        data-sidebar-position="fixed" data-header-position="fixed">
+        <aside class="left-sidebar">
+            <div>
+                <div class="brand-logo d-flex align-items-center justify-content-between">
+                    <a href="dashboard.html" class="dashboard-brand">
+                        <span class="dashboard-brand-icon-wrap">
+                            <img src="../assets/images/logos/favicon.png" alt="Hagbad icon" class="dashboard-brand-icon" />
+                        </span>
+                        <span class="portal-brand-copy">
+                            <span class="portal-brand-name">Hagbad</span>
+                            <span class="portal-brand-subtitle">Member workspace</span>
+                        </span>
+                    </a>
+                    <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
+                        <i class="ti ti-x fs-6"></i>
+                    </div>
+                </div>
+
+                <nav class="sidebar-nav scroll-sidebar" aria-label="Sidebar">
+                    <ul id="sidebarnav">
+                        <li class="nav-small-cap">
+                            <span class="hide-menu">Workspace</span>
+                        </li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link primary-hover-bg" href="dashboard.html" aria-expanded="false">
+                                <i class="ti ti-layout-dashboard"></i>
+                                <span class="hide-menu">Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="nav-small-cap">
+                            <span class="hide-menu">Groups</span>
+                        </li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link primary-hover-bg" href="my_groups.html" aria-expanded="false">
+                                <i class="ti ti-layout-grid"></i>
+                                <span class="hide-menu">My Groups</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link primary-hover-bg active" href="explore_groups.html" aria-expanded="false">
+                                <i class="ti ti-compass"></i>
+                                <span class="hide-menu">Explore Groups</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link primary-hover-bg" href="add_group.html" aria-expanded="false">
+                                <i class="ti ti-plus"></i>
+                                <span class="hide-menu">Add New Group</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <div class="body-wrapper">
+            <header class="app-header">
+                <nav class="navbar navbar-expand-lg navbar-light dashboard-topbar">
+                    <div class="container-fluid p-0">
+                        <div class="d-flex align-items-center gap-3">
+                            <a class="nav-link d-xl-none p-0 sidebartoggler" href="javascript:void(0)" aria-label="Toggle sidebar">
+                                <i class="ti ti-menu-2 fs-7"></i>
+                            </a>
+                            <div class="workspace-page-copy">
+                                <div class="portal-mini-title">Hagbad workspace</div>
+                                <h1>Explore Groups</h1>
+                            </div>
+                        </div>
+
+                        <div id="workspace-user-menu" class="ms-auto"></div>
+                    </div>
+                </nav>
+            </header>
+
+            <div class="container-fluid py-4">
+                <section class="dashboard-hero groups-hero groups-page-hero">
+                    <div>
+                        <span class="eyebrow text-white mb-3">Discovery</span>
+                        <h2>Find visible public and private groups.</h2>
+                        <p>
+                            Public groups can be joined instantly. Visible private groups accept join requests and
+                            stay discoverable without exposing hidden groups.
+                        </p>
+                    </div>
+                </section>
+
+                <section class="dashboard-panel card group-list-panel mt-4">
+                    <div class="card-body">
+                        <div class="dashboard-panel-title align-items-center">
+                            <div>
+                                <h3>Explore Groups</h3>
+                                <p id="groups-intro">Visible groups outside your memberships.</p>
+                            </div>
+                        </div>
+
+                        <form id="groups-filter-form" class="group-filter-bar group-filter-bar-explore" novalidate>
+                            <div class="group-search-shell group-search-shell-wide">
+                                <label for="groups-search" class="visually-hidden">Search explore groups</label>
+                                <input id="groups-search" class="form-control portal-input group-search-input" type="search"
+                                    placeholder="Search group name" />
+                            </div>
+                        </form>
+
+                        <div class="group-inline-meta">
+                            <span id="groups-scope-label" class="status-chip status-loading">Explore Groups</span>
+                            <span id="groups-loaded-count" class="dashboard-note">Loading groups...</span>
+                        </div>
+
+                        <div id="groups-status" class="dashboard-note mb-3" aria-live="polite"></div>
+                        <div id="groups-list" class="group-card-grid" aria-label="Explore groups"></div>
+
+                        <div class="groups-pager">
+                            <span id="groups-page-label" class="dashboard-note">Page 1</span>
+                            <div class="d-flex gap-2">
+                                <button id="groups-prev" class="btn portal-btn-secondary pager-btn" type="button">Prev</button>
+                                <button id="groups-next" class="btn portal-btn-secondary pager-btn" type="button">Next</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="../assets/libs/jquery/dist/jquery.min.js"></script>
+    <script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/app.min.js"></script>
+    <script src="../assets/js/sidebarmenu.js"></script>
+    <script src="../js/app.js" defer></script>
+    <script src="../modules/user/user_api.js" defer></script>
+    <script src="../modules/join_request/join_request_api.js" defer></script>
+    <script src="../modules/group/group_api.js" defer></script>
+    <script src="../modules/group/group.js" defer></script>
+</body>
+</html>

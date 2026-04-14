@@ -39,6 +39,19 @@
         return /^[0-9+\-\s()]{6,30}$/.test(phone);
     }
 
+    function validateSessionHours(rawValue) {
+        const value = String(rawValue || "").trim();
+        if (!value) return { ok: true, parsed: null };
+        if (!/^\d+$/.test(value)) return { ok: false, parsed: null };
+
+        const hours = Number(value);
+        if (!Number.isInteger(hours) || hours < 1 || hours > 720) {
+            return { ok: false, parsed: null };
+        }
+
+        return { ok: true, parsed: hours };
+    }
+
     function clearAllFieldErrors(form) {
         form.querySelectorAll("input").forEach((inp) => window.APP.clearFieldError(inp));
     }
@@ -84,6 +97,15 @@
     function formatStatus(value) {
         if (!value) return "Unknown";
         return String(value).charAt(0).toUpperCase() + String(value).slice(1);
+    }
+
+    function formatSessionHours(value) {
+        if (value === null || value === undefined || value === "") {
+            return "Never expires automatically";
+        }
+        const hours = Number(value);
+        if (!Number.isFinite(hours)) return "Never expires automatically";
+        return `${hours} hour${hours === 1 ? "" : "s"}`;
     }
 
     function bindPasswordToggles(container) {
@@ -286,6 +308,7 @@
                 ["Full name", profile.full_name || "-"],
                 ["Email", profile.email || "-"],
                 ["Phone", profile.phone || "-"],
+                ["Session", formatSessionHours(profile.session_hours)],
                 ["Status", profile.status || "-"],
                 ["Created", profile.created_at ? new Date(profile.created_at).toLocaleString() : "-"],
             ]);
@@ -323,6 +346,7 @@
         const nameInput = qs("#profile_full_name");
         const emailInput = qs("#profile_email");
         const phoneInput = qs("#profile_phone");
+        const sessionHoursInput = qs("#profile_session_hours");
         const avatarImg = qs("#profile-avatar-preview");
         const imageInput = qs("#profile_image");
         const removeImageInput = qs("#remove_profile_image");
@@ -362,6 +386,7 @@
             if (nameInput) nameInput.value = profile.full_name || "";
             if (emailInput) emailInput.value = profile.email || "";
             if (phoneInput) phoneInput.value = profile.phone || "";
+            if (sessionHoursInput) sessionHoursInput.value = profile.session_hours ?? "";
             if (cardName) cardName.textContent = profile.full_name || "User";
             if (cardEmail) cardEmail.textContent = profile.email || "-";
             if (cardStatus) {
@@ -410,9 +435,11 @@
             showProfileMessage("", "");
             window.APP.clearFieldError(nameInput);
             window.APP.clearFieldError(phoneInput);
+            window.APP.clearFieldError(sessionHoursInput);
 
             const fullName = nameInput.value.trim();
             const phone = phoneInput.value.trim();
+            const sessionHoursState = validateSessionHours(sessionHoursInput ? sessionHoursInput.value : "");
             if (fullName.length < 2) {
                 window.APP.setFieldError(nameInput, "Please enter your full name.");
                 showProfileMessage("error", "Please fix the highlighted field.");
@@ -420,6 +447,11 @@
             }
             if (!validatePhone(phone)) {
                 window.APP.setFieldError(phoneInput, "Please enter a valid phone number.");
+                showProfileMessage("error", "Please fix the highlighted field.");
+                return;
+            }
+            if (!sessionHoursState.ok) {
+                window.APP.setFieldError(sessionHoursInput, "Enter a whole number from 1 to 720, or leave it blank.");
                 showProfileMessage("error", "Please fix the highlighted field.");
                 return;
             }
@@ -431,6 +463,7 @@
                 const updated = await window.UserAPI.updateProfile(token, {
                     fullName,
                     phone: phone || null,
+                    sessionHours: sessionHoursState.parsed,
                     imageFile: imageInput.files && imageInput.files[0] ? imageInput.files[0] : null,
                     removeImage: removeImageInput.checked,
                 });
