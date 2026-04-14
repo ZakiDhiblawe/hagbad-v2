@@ -1,54 +1,221 @@
 <!DOCTYPE html>
 <html lang="en-GB">
-
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="api-base" content="http://localhost:8000" />
-    <title>Hagbad</title>
-    <link rel="stylesheet" href="css/style.css" />
+    <title>Hagbad | Cooperative Savings Workspace</title>
+    <link rel="shortcut icon" type="image/png" href="assets/images/logos/favicon.png" />
+    <link rel="stylesheet" href="assets/css/styles.min.css" />
+    <link rel="stylesheet" href="css/portal.css" />
 </head>
 
-<body data-page="home" data-root="true">
-    <div id="app-header"></div>
+<body data-page="home" data-root="true" class="portal-body portal-home">
+    <header class="site-nav">
+        <div class="container py-1">
+            <div class="site-nav-shell">
+                <a class="portal-brand" href="index.html">
+                    <span class="portal-brand-mark">H</span>
+                    <span class="portal-brand-copy">
+                        <span class="portal-brand-name">Hagbad</span>
+                        <span class="portal-brand-subtitle">Savings workspace for Ayuuto groups</span>
+                    </span>
+                </a>
 
-    <main class="container" aria-labelledby="page-title">
-        <div class="hero">
-            <h1 id="page-title">Hagbad</h1>
-            <p>Group savings platform (Ayuuto / ROSCA)</p>
+                <nav class="site-nav-links" aria-label="Primary">
+                    <a href="#workspace">Workspace</a>
+                    <a href="#trust">Controls</a>
+                    <a href="#flow">How it works</a>
+                </nav>
+
+                <div class="site-nav-actions">
+                    <a class="btn portal-btn-secondary" href="pages/login.html">Sign in</a>
+                    <a class="btn portal-btn-primary" href="pages/register.html">Create account</a>
+                </div>
+            </div>
         </div>
+    </header>
 
-        <section class="card" aria-label="Server status">
-            <div class="card-header">
-                <h2>System status</h2>
-                <p>Frontend checks backend availability.</p>
-            </div>
+    <main class="hero-shell">
+        <div class="container">
+            <section class="hero-panel">
+                <div class="row align-items-center g-5">
+                    <div class="col-lg-7">
+                        <div class="eyebrow">Hagbad operations hub</div>
+                        <h1 class="hero-title">Run group savings with a cleaner shared workflow.</h1>
+                        <p class="hero-lead">
+                            Bring contribution tracking, payout approvals, invites, join requests, and cycle visibility
+                            into one workspace built for cooperative savings groups that need discipline, clarity, and
+                            accountability.
+                        </p>
 
-            <div class="card-body" style="text-align:center;">
-                <div id="status" class="status-pill loading" aria-live="polite">Checking server…</div>
+                        <div class="hero-actions">
+                            <a class="btn portal-btn-primary" href="pages/register.html">Start a new group</a>
+                            <a class="btn portal-btn-secondary" href="pages/login.html">Sign in to your workspace</a>
+                            <span id="status" class="status-chip status-loading" aria-live="polite">Checking backend</span>
+                        </div>
 
-                <div class="split" style="margin-top:16px;">
-                    <button class="btn btn-secondary" type="button"
-                        onclick="APP.navigate('pages/login.html')">Login</button>
-                    <button class="btn" type="button" onclick="APP.navigate('pages/register.html')">Register</button>
+                        <div class="hero-meta">
+                            <div class="hero-metric">
+                                <strong>Groups</strong>
+                                <span>Create public or private savings circles with controlled access.</span>
+                            </div>
+                            <div class="hero-metric">
+                                <strong>Cycles</strong>
+                                <span>Track contribution windows, payment status, and payout completion.</span>
+                            </div>
+                            <div class="hero-metric">
+                                <strong>Decisions</strong>
+                                <span>Approve members, payouts, and progress with a clear audit trail.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-5">
+                        <div class="workspace-stage" id="workspace">
+                            <div class="topline">
+                                <div>
+                                    <h3>Operational snapshot</h3>
+                                    <p>See your collective savings workflow the moment you sign in.</p>
+                                </div>
+                                <span class="badge rounded-pill text-bg-light text-primary">Live view</span>
+                            </div>
+
+                            <div class="workspace-card-grid">
+                                <div class="workspace-mini-card">
+                                    <strong>5 active groups</strong>
+                                    <span>Teams segmented by family, staff, and neighborhood circles.</span>
+                                </div>
+                                <div class="workspace-mini-card">
+                                    <strong>12 pending actions</strong>
+                                    <span>Outstanding approvals and payment follow-ups visible in one place.</span>
+                                </div>
+                            </div>
+
+                            <div class="workspace-wide-card">
+                                <strong>Cycle readiness</strong>
+                                <span>Confirm contributions are settled before payouts are approved and closed.</span>
+                            </div>
+
+                            <div class="workspace-list">
+                                <div class="workspace-list-item">
+                                    <div>
+                                        <strong>Members and invites</strong>
+                                        <small>Private groups stay controlled with request review and invite redemption.</small>
+                                    </div>
+                                    <span class="badge rounded-pill text-bg-light text-primary">Secure</span>
+                                </div>
+                                <div class="workspace-list-item">
+                                    <div>
+                                        <strong>Payments and payouts</strong>
+                                        <small>Amounts due, amounts paid, and payout states stay visible to managers.</small>
+                                    </div>
+                                    <span class="badge rounded-pill text-bg-light text-primary">Tracked</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div style="margin-top:12px;">
-                    <button class="btn btn-secondary" type="button" onclick="APP.navigate('pages/dashboard.html')">
-                        Go to dashboard
-                    </button>
-                    <p class="hint" style="margin-top:10px;">
-                        If you are not logged in, dashboard will redirect you to login.
-                    </p>
+                <div class="workspace-tile-grid">
+                    <article class="workspace-tile">
+                        <i class="ti ti-users-group"></i>
+                        <h4>Groups</h4>
+                        <p>Set ownership, privacy, and operational structure for each savings circle.</p>
+                    </article>
+                    <article class="workspace-tile">
+                        <i class="ti ti-user-check"></i>
+                        <h4>Join review</h4>
+                        <p>Approve or reject membership requests before private groups expand.</p>
+                    </article>
+                    <article class="workspace-tile">
+                        <i class="ti ti-credit-card-pay"></i>
+                        <h4>Payments</h4>
+                        <p>Track due, paid, and late states without leaving the workspace.</p>
+                    </article>
+                    <article class="workspace-tile">
+                        <i class="ti ti-cash-banknote"></i>
+                        <h4>Payouts</h4>
+                        <p>Approve only after collection targets are met and paid amounts are available.</p>
+                    </article>
                 </div>
-            </div>
-        </section>
+            </section>
+
+            <section class="feature-strip mt-4" id="trust">
+                <article class="feature-card">
+                    <div class="feature-icon"><i class="ti ti-shield-lock"></i></div>
+                    <h3>Role-aware controls</h3>
+                    <p>Creators, admins, members, and cycle participants see different actions based on permissions already enforced by the API.</p>
+                </article>
+                <article class="feature-card">
+                    <div class="feature-icon"><i class="ti ti-stack-2"></i></div>
+                    <h3>One backend, one frontend</h3>
+                    <p>The app runs as a FastAPI backend with a deployable static frontend, keeping the deployment surface straightforward.</p>
+                </article>
+                <article class="feature-card">
+                    <div class="feature-icon"><i class="ti ti-checkup-list"></i></div>
+                    <h3>Cycle closure discipline</h3>
+                    <p>Completion depends on settled payments and paid payouts, so the platform reinforces operational correctness.</p>
+                </article>
+            </section>
+
+            <section class="info-band" id="flow">
+                <h2 class="section-heading">A public entry point, then a focused dashboard.</h2>
+                <p class="section-copy">
+                    Visitors start on this landing page. Once authenticated, they move directly into the dashboard
+                    workspace with sidebar navigation, quick actions, and profile visibility. That gives you a cleaner
+                    deployment story for production and a more professional first impression before sign-in.
+                </p>
+            </section>
+        </div>
     </main>
+
+    <footer class="landing-footer">
+        <div class="container">
+            <div class="landing-footer-shell">
+                <div class="landing-footer-grid">
+                    <div>
+                        <a class="portal-brand" href="index.html">
+                            <span class="portal-brand-mark">H</span>
+                            <span class="portal-brand-copy">
+                                <span class="portal-brand-name">Hagbad</span>
+                                <span class="portal-brand-subtitle">Cooperative savings workspace</span>
+                            </span>
+                        </a>
+                        <p class="landing-footer-copy">
+                            A cleaner front door for members before sign-in, with a focused dashboard waiting after authentication.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 class="landing-footer-title">Quick links</h3>
+                        <div class="landing-footer-links">
+                            <a href="pages/login.html">Sign in</a>
+                            <a href="pages/register.html">Create account</a>
+                            <a href="#workspace">Workspace</a>
+                            <a href="#flow">How it works</a>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="landing-footer-title">Deployment ready</h3>
+                        <p class="landing-footer-copy">
+                            Public pages live separately from the authenticated workspace, which gives you a more professional production flow.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="landing-footer-bottom">
+                    <span>© 2026 Hagbad</span>
+                    <span>Built for savings groups, members, cycles, payments, and payouts.</span>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
-    <script src="js/app.js?v=5" defer></script>
+    <script src="js/app.js" defer></script>
     <script src="modules/main/main.js" defer></script>
 </body>
-
 </html>

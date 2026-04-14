@@ -6,13 +6,20 @@
         try {
             const res = await fetch(`${window.APP.getApiBase()}/`);
             if (!res.ok) throw new Error("server error");
-            status.textContent = "Server is running";
-            status.className = "status-pill ok";
+            status.textContent = "Backend connected";
+            status.className = "status-chip status-ok";
         } catch {
-            status.textContent = "Server is DOWN";
-            status.className = "status-pill down";
+            status.textContent = "Backend unavailable";
+            status.className = "status-chip status-down";
         }
     }
 
-    document.addEventListener("DOMContentLoaded", checkServer);
+    document.addEventListener("DOMContentLoaded", () => {
+        if (window.APP.isAuthed()) {
+            window.APP.navigate("pages/dashboard.html");
+            return;
+        }
+
+        checkServer();
+    });
 })();

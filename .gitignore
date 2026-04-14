@@ -17,6 +17,10 @@ venv/
 # Logs
 *.log
 
+# Uploaded user files
+backend/files/profile/*
+!backend/files/profile/.gitkeep
+
 # VS Code
 .vscode/
 

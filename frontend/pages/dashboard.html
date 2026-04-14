@@ -1,53 +1,190 @@
 <!DOCTYPE html>
 <html lang="en-GB">
-
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="api-base" content="http://localhost:8000" />
-    <title>Dashboard • Hagbad</title>
-    <link rel="stylesheet" href="../css/style.css" />
+    <title>Dashboard | Hagbad</title>
+    <link rel="shortcut icon" type="image/png" href="../assets/images/logos/favicon.png" />
+    <link rel="stylesheet" href="../assets/css/styles.min.css" />
+    <link rel="stylesheet" href="../css/portal.css" />
 </head>
 
-<body data-page="dashboard" data-root="false">
-    <div id="app-header"></div>
-
-    <main class="container" aria-labelledby="page-title">
-        <div class="hero">
-            <h1 id="page-title">Dashboard</h1>
-            <p>Account overview and profile.</p>
-        </div>
-
-        <section class="card" aria-label="Profile">
-            <div class="card-header">
-                <h2>Hello, <span id="profile-name">User</span></h2>
-                <p id="profile-status" class="status-pill loading" aria-live="polite">Loading profile…</p>
-            </div>
-
-            <div class="card-body">
-                <dl id="profile-grid" class="profile-grid"></dl>
-
-                <div class="split" style="margin-top:16px;">
-                    <button class="btn btn-secondary" type="button" onclick="APP.navigate('../index.html')">Back to
-                        home</button>
-                    <button class="btn" type="button"
-                        onclick="APP.clearToken(); APP.showToast('Logged out','info'); APP.navigate('login.html');">
-                        Logout
-                    </button>
+<body data-page="dashboard" data-root="false" class="portal-body dashboard-body">
+    <div class="page-wrapper" id="main-wrapper" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+        data-sidebar-position="fixed" data-header-position="fixed">
+        <aside class="left-sidebar">
+            <div>
+                <div class="brand-logo d-flex align-items-center justify-content-between">
+                    <a href="dashboard.html" class="dashboard-brand">
+                        <span class="dashboard-brand-icon-wrap">
+                            <img src="../assets/images/logos/favicon.png" alt="Hagbad icon" class="dashboard-brand-icon" />
+                        </span>
+                        <span class="portal-brand-copy">
+                            <span class="portal-brand-name">Hagbad</span>
+                            <span class="portal-brand-subtitle">Member workspace</span>
+                        </span>
+                    </a>
+                    <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
+                        <i class="ti ti-x fs-6"></i>
+                    </div>
                 </div>
 
-                <p class="footer-note">
-                    If your session expires, you will be asked to log in again.
+                <nav class="sidebar-nav scroll-sidebar" aria-label="Sidebar">
+                    <ul id="sidebarnav">
+                        <li class="nav-small-cap">
+                            <span class="hide-menu">Workspace</span>
+                        </li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link primary-hover-bg" href="dashboard.html" aria-expanded="false">
+                                <i class="ti ti-layout-dashboard"></i>
+                                <span class="hide-menu">Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a class="sidebar-link primary-hover-bg" href="groups.html" aria-expanded="false">
+                                <i class="ti ti-users-group"></i>
+                                <span class="hide-menu">Groups</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <div class="body-wrapper">
+            <header class="app-header">
+                <nav class="navbar navbar-expand-lg navbar-light dashboard-topbar">
+                    <div class="container-fluid p-0">
+                        <div class="d-flex align-items-center gap-3">
+                            <a class="nav-link d-xl-none p-0 sidebartoggler" href="javascript:void(0)" aria-label="Toggle sidebar">
+                                <i class="ti ti-menu-2 fs-7"></i>
+                            </a>
+                            <div class="workspace-page-copy">
+                                <div class="portal-mini-title">Hagbad workspace</div>
+                                <h1>Dashboard</h1>
+                            </div>
+                        </div>
+
+                        <div id="workspace-user-menu" class="ms-auto"></div>
+                    </div>
+                </nav>
+            </header>
+
+            <div class="container-fluid py-4">
+                <section class="dashboard-hero">
+                    <span class="eyebrow text-white mb-3">Authenticated area</span>
+                    <h2>Hello, <span id="profile-name">member</span></h2>
+                    <p id="profile-summary">Loading your account and preparing your group savings workspace.</p>
+
+                    <div class="dashboard-summary-grid">
+                        <div class="dashboard-summary-card">
+                            <span>Session state</span>
+                            <strong id="profile-status">Loading...</strong>
+                        </div>
+                        <div class="dashboard-summary-card">
+                            <span>Account email</span>
+                            <strong id="profile-email-hero">Loading...</strong>
+                        </div>
+                        <div class="dashboard-summary-card">
+                            <span>Member since</span>
+                            <strong id="profile-created">Loading...</strong>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="row g-4 mt-1">
+                    <div class="col-xl-7">
+                        <section class="dashboard-panel card h-100" aria-label="Profile details">
+                            <div class="card-body">
+                                <div class="dashboard-panel-title">
+                                    <div>
+                                        <h3>Profile overview</h3>
+                                        <p>Your authenticated account data from the FastAPI backend.</p>
+                                    </div>
+                                    <span class="status-chip status-loading" id="profile-status-chip">Syncing profile</span>
+                                </div>
+
+                                <dl id="profile-grid" class="profile-grid"></dl>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="col-xl-5">
+                        <section class="dashboard-panel card h-100" aria-label="Quick actions">
+                            <div class="card-body">
+                                <div class="dashboard-panel-title">
+                                    <div>
+                                        <h3>Quick actions</h3>
+                                        <p>Move straight into the main workflows.</p>
+                                    </div>
+                                </div>
+
+                                <div class="quick-links">
+                                    <a class="quick-link-card" href="groups.html">
+                                        <span class="link-copy">
+                                            <i class="ti ti-users-group"></i>
+                                            <span>
+                                                <strong>Manage groups</strong>
+                                                <span>Create, open, edit, or remove your savings groups.</span>
+                                            </span>
+                                        </span>
+                                        <i class="ti ti-arrow-right"></i>
+                                    </a>
+
+                                    <a class="quick-link-card" href="group_settings.html">
+                                        <span class="link-copy">
+                                            <i class="ti ti-adjustments-horizontal"></i>
+                                            <span>
+                                                <strong>Review settings</strong>
+                                                <span>Control contributions, frequency, and operating rules.</span>
+                                            </span>
+                                        </span>
+                                        <i class="ti ti-arrow-right"></i>
+                                    </a>
+
+                                    <a class="quick-link-card" href="join_requests.html">
+                                        <span class="link-copy">
+                                            <i class="ti ti-user-question"></i>
+                                            <span>
+                                                <strong>Join requests</strong>
+                                                <span>Approve or reject membership requests for managed groups.</span>
+                                            </span>
+                                        </span>
+                                        <i class="ti ti-arrow-right"></i>
+                                    </a>
+
+                                    <a class="quick-link-card" href="group_review.html">
+                                        <span class="link-copy">
+                                            <i class="ti ti-file-search"></i>
+                                            <span>
+                                                <strong>Group review</strong>
+                                                <span>Check operational pages before moving into payment cycles.</span>
+                                            </span>
+                                        </span>
+                                        <i class="ti ti-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <p class="dashboard-note mt-4 mb-0">
+                    If your token expires or becomes invalid, the app will clear the session and return you to the sign-in page.
                 </p>
             </div>
-        </section>
-    </main>
+        </div>
+    </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
-    <script src="../js/app.js?v=5" defer></script>
+    <script src="../assets/libs/jquery/dist/jquery.min.js"></script>
+    <script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/app.min.js"></script>
+    <script src="../assets/js/sidebarmenu.js"></script>
+    <script src="../js/app.js" defer></script>
     <script src="../modules/user/user_api.js" defer></script>
     <script src="../modules/user/user.js" defer></script>
 </body>
-
 </html>

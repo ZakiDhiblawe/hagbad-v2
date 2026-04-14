@@ -1,85 +1,135 @@
 <!DOCTYPE html>
 <html lang="en-GB">
-
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="api-base" content="http://localhost:8000" />
-    <title>Register • Hagbad</title>
-    <link rel="stylesheet" href="../css/style.css" />
+    <title>Create account | Hagbad</title>
+    <link rel="shortcut icon" type="image/png" href="../assets/images/logos/favicon.png" />
+    <link rel="stylesheet" href="../assets/css/styles.min.css" />
+    <link rel="stylesheet" href="../css/portal.css" />
 </head>
 
-<body data-page="register" data-root="false">
-    <div id="app-header"></div>
+<body data-page="register" data-root="false" class="portal-body auth-body">
+    <main class="auth-shell">
+        <section class="auth-frame">
+            <div class="row g-0">
+                <div class="col-lg-5">
+                    <div class="auth-panel">
+                        <a class="portal-brand" href="../index.html">
+                            <span class="portal-brand-mark">H</span>
+                            <span class="portal-brand-copy">
+                                <span class="portal-brand-name text-white">Hagbad</span>
+                                <span class="portal-brand-subtitle text-white-50">Savings operations for serious groups</span>
+                            </span>
+                        </a>
 
-    <main class="container" aria-labelledby="page-title">
-        <div class="hero">
-            <h1 id="page-title">Create your account</h1>
-            <p>Join Hagbad and start saving with your group.</p>
-        </div>
+                        <h1>Create the account behind your savings circle.</h1>
+                        <p>Set up your member profile, then go straight into the workspace to create groups and manage participation.</p>
 
-        <section class="card" aria-label="Registration form">
-            <div class="card-header">
-                <h2>Register</h2>
-                <p>All fields are required except phone.</p>
-            </div>
-
-            <div class="card-body">
-                <form id="register-form" novalidate>
-                    <div id="form-error" class="form-error" role="alert" hidden></div>
-                    <div id="form-success" class="form-success" role="status" aria-live="polite" hidden></div>
-
-                    <div class="field">
-                        <label for="full_name">Full name</label>
-                        <input id="full_name" name="full_name" type="text" autocomplete="name" required
-                            placeholder="e.g. Ahmed Osman" aria-describedby="full_name-error" />
-                        <p id="full_name-error" class="error" role="alert"></p>
-                    </div>
-
-                    <div class="field">
-                        <label for="email">Email</label>
-                        <input id="email" name="email" type="email" autocomplete="email" required
-                            placeholder="e.g. test@mail.com" aria-describedby="email-hint email-error" />
-                        <p id="email-hint" class="hint">This will be your login username.</p>
-                        <p id="email-error" class="error" role="alert"></p>
-                    </div>
-
-                    <div class="field">
-                        <label for="phone">Phone (optional)</label>
-                        <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="e.g. 0612345678"
-                            aria-describedby="phone-error" />
-                        <p id="phone-error" class="error" role="alert"></p>
-                    </div>
-
-                    <div class="field">
-                        <label for="password">Password</label>
-                        <div class="input-row">
-                            <input id="password" name="password" type="password" autocomplete="new-password" required
-                                placeholder="Minimum 6 characters" aria-describedby="password-hint password-error" />
-                            <button type="button" class="icon-btn" data-toggle-password="password">Show</button>
+                        <div class="auth-points">
+                            <div class="auth-point">
+                                <i class="ti ti-users-plus"></i>
+                                <div>
+                                    <strong>Create and manage groups</strong>
+                                    <span>Start public or private circles with a structured ownership model.</span>
+                                </div>
+                            </div>
+                            <div class="auth-point">
+                                <i class="ti ti-calendar-time"></i>
+                                <div>
+                                    <strong>Track cycles clearly</strong>
+                                    <span>Move from pending to active to completed with visible payment readiness.</span>
+                                </div>
+                            </div>
+                            <div class="auth-point">
+                                <i class="ti ti-checklist"></i>
+                                <div>
+                                    <strong>Stay deployment-ready</strong>
+                                    <span>The public entry flow and the authenticated dashboard are now separated cleanly.</span>
+                                </div>
+                            </div>
                         </div>
-                        <p id="password-hint" class="hint">Choose a strong password you don’t reuse elsewhere.</p>
-                        <p id="password-error" class="error" role="alert"></p>
                     </div>
+                </div>
 
-                    <div class="field">
-                        <label for="confirm_password">Confirm password</label>
-                        <div class="input-row">
-                            <input id="confirm_password" name="confirm_password" type="password"
-                                autocomplete="new-password" required placeholder="Repeat password"
-                                aria-describedby="confirm_password-error" />
-                            <button type="button" class="icon-btn" data-toggle-password="confirm_password">Show</button>
-                        </div>
-                        <p id="confirm_password-error" class="error" role="alert"></p>
+                <div class="col-lg-7">
+                    <div class="auth-card">
+                        <span class="eyebrow">Set up your workspace access</span>
+                        <h2>Create your account</h2>
+                        <p>All fields are required except phone.</p>
+
+                        <form id="register-form" class="mt-4" novalidate>
+                            <div id="form-error" class="form-error" role="alert" hidden></div>
+                            <div id="form-success" class="form-success" role="status" aria-live="polite" hidden></div>
+
+                            <div class="mb-3">
+                                <div class="form-label-wrap">
+                                    <label for="full_name">Full name</label>
+                                </div>
+                                <input id="full_name" name="full_name" class="form-control portal-input" type="text"
+                                    autocomplete="name" required placeholder="Enter your full name"
+                                    aria-describedby="full_name-error" />
+                                <p id="full_name-error" class="field-error" role="alert"></p>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-label-wrap">
+                                    <label for="email">Email address</label>
+                                </div>
+                                <input id="email" name="email" class="form-control portal-input" type="email"
+                                    autocomplete="email" required placeholder="Enter your email address"
+                                    aria-describedby="email-hint email-error" />
+                                <p id="email-hint" class="field-hint">This email becomes your login username.</p>
+                                <p id="email-error" class="field-error" role="alert"></p>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-label-wrap">
+                                    <label for="phone">Phone number</label>
+                                    <span class="field-hint">Optional</span>
+                                </div>
+                                <input id="phone" name="phone" class="form-control portal-input" type="tel" autocomplete="tel"
+                                    placeholder="Enter your phone number" aria-describedby="phone-error" />
+                                <p id="phone-error" class="field-error" role="alert"></p>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-label-wrap">
+                                    <label for="password">Password</label>
+                                </div>
+                                <div class="input-group">
+                                    <input id="password" name="password" class="form-control portal-input" type="password"
+                                        autocomplete="new-password" required placeholder="Create a secure password"
+                                        aria-describedby="password-hint password-error" />
+                                    <button type="button" class="btn portal-toggle" data-toggle-password="password">Show</button>
+                                </div>
+                                <p id="password-hint" class="field-hint">Choose a password you do not reuse elsewhere.</p>
+                                <p id="password-error" class="field-error" role="alert"></p>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-label-wrap">
+                                    <label for="confirm_password">Confirm password</label>
+                                </div>
+                                <div class="input-group">
+                                    <input id="confirm_password" name="confirm_password" class="form-control portal-input"
+                                        type="password" autocomplete="new-password" required placeholder="Re-enter your password"
+                                        aria-describedby="confirm_password-error" />
+                                    <button type="button" class="btn portal-toggle" data-toggle-password="confirm_password">Show</button>
+                                </div>
+                                <p id="confirm_password-error" class="field-error" role="alert"></p>
+                            </div>
+
+                            <button id="register-submit" class="btn portal-btn-primary w-100 mt-3" type="submit">Create account</button>
+
+                            <p class="auth-footer">
+                                Already have an account?
+                                <a href="login.html">Sign in</a>
+                            </p>
+                        </form>
                     </div>
-
-                    <button id="register-submit" class="btn" type="submit">Create account</button>
-
-                    <p class="footer-note">
-                        Already have an account?
-                        <a href="login.html">Login</a>
-                    </p>
-                </form>
+                </div>
             </div>
         </section>
     </main>
@@ -90,5 +140,4 @@
     <script src="../modules/user/user_api.js" defer></script>
     <script src="../modules/user/user.js" defer></script>
 </body>
-
 </html>

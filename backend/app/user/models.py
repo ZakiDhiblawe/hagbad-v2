@@ -24,6 +24,8 @@ class User(Base):
 
     phone = Column(String(30), nullable=True)
 
+    profile_image = Column(String(255), nullable=True)
+
     # stores the hashed password
     password = Column(String(255), nullable=False)
 

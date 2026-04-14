@@ -1,58 +1,105 @@
 <!DOCTYPE html>
 <html lang="en-GB">
-
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="api-base" content="http://localhost:8000" />
-    <title>Login • Hagbad</title>
-    <link rel="stylesheet" href="../css/style.css" />
+    <title>Sign in | Hagbad</title>
+    <link rel="shortcut icon" type="image/png" href="../assets/images/logos/favicon.png" />
+    <link rel="stylesheet" href="../assets/css/styles.min.css" />
+    <link rel="stylesheet" href="../css/portal.css" />
 </head>
 
-<body data-page="login" data-root="false">
-    <div id="app-header"></div>
+<body data-page="login" data-root="false" class="portal-body auth-body">
+    <main class="auth-shell">
+        <section class="auth-frame">
+            <div class="row g-0">
+                <div class="col-lg-5">
+                    <div class="auth-panel">
+                        <a class="portal-brand" href="../index.html">
+                            <span class="portal-brand-mark">H</span>
+                            <span class="portal-brand-copy">
+                                <span class="portal-brand-name text-white">Hagbad</span>
+                                <span class="portal-brand-subtitle text-white-50">Professional savings coordination</span>
+                            </span>
+                        </a>
 
-    <main class="container" aria-labelledby="page-title">
-        <div class="hero">
-            <h1 id="page-title">Welcome back</h1>
-            <p>Sign in to continue.</p>
-        </div>
+                        <h1>Sign in to your savings workspace.</h1>
+                        <p>Open your dashboard, review member activity, and move directly into groups, cycles, payments, and payouts.</p>
 
-        <section class="card" aria-label="Login form">
-            <div class="card-header">
-                <h2>Login</h2>
-                <p>Use your email and password.</p>
-            </div>
-
-            <div class="card-body">
-                <form id="login-form" novalidate>
-                    <div id="form-error" class="form-error" role="alert" hidden></div>
-                    <div id="form-success" class="form-success" role="status" aria-live="polite" hidden></div>
-
-                    <div class="field">
-                        <label for="email">Email</label>
-                        <input id="email" name="email" type="email" autocomplete="email" required
-                            placeholder="e.g. test@mail.com" aria-describedby="email-error" />
-                        <p id="email-error" class="error" role="alert"></p>
-                    </div>
-
-                    <div class="field">
-                        <label for="password">Password</label>
-                        <div class="input-row">
-                            <input id="password" name="password" type="password" autocomplete="current-password"
-                                required placeholder="Your password" aria-describedby="password-error" />
-                            <button type="button" class="icon-btn" data-toggle-password="password">Show</button>
+                        <div class="auth-points">
+                            <div class="auth-point">
+                                <i class="ti ti-layout-dashboard"></i>
+                                <div>
+                                    <strong>Structured dashboard access</strong>
+                                    <span>Authenticated users land directly in the admin workspace.</span>
+                                </div>
+                            </div>
+                            <div class="auth-point">
+                                <i class="ti ti-user-check"></i>
+                                <div>
+                                    <strong>Membership control</strong>
+                                    <span>Review private join requests and invite flows from one place.</span>
+                                </div>
+                            </div>
+                            <div class="auth-point">
+                                <i class="ti ti-cash-banknote"></i>
+                                <div>
+                                    <strong>Operational discipline</strong>
+                                    <span>Track contribution and payout progress with clearer visibility.</span>
+                                </div>
+                            </div>
                         </div>
-                        <p id="password-error" class="error" role="alert"></p>
                     </div>
+                </div>
 
-                    <button id="login-submit" class="btn" type="submit">Sign in</button>
+                <div class="col-lg-7">
+                    <div class="auth-card">
+                        <span class="eyebrow">Access your account</span>
+                        <h2>Welcome back</h2>
+                        <p>Sign in with your registered email address to continue into the Hagbad workspace.</p>
 
-                    <p class="footer-note">
-                        New here?
-                        <a href="register.html">Create an account</a>
-                    </p>
-                </form>
+                        <form id="login-form" class="mt-4" novalidate>
+                            <div id="form-error" class="form-error" role="alert" hidden></div>
+                            <div id="form-success" class="form-success" role="status" aria-live="polite" hidden></div>
+
+                            <div class="mb-3">
+                                <div class="form-label-wrap">
+                                    <label for="email">Email address</label>
+                                </div>
+                                <input id="email" name="email" class="form-control portal-input" type="email" autocomplete="email"
+                                    required placeholder="Enter your email address" aria-describedby="email-hint email-error" />
+                                <p id="email-hint" class="field-hint">Use the email linked to your Hagbad account.</p>
+                                <p id="email-error" class="field-error" role="alert"></p>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-label-wrap">
+                                    <label for="password">Password</label>
+                                </div>
+                                <div class="input-group">
+                                    <input id="password" name="password" class="form-control portal-input" type="password"
+                                        autocomplete="current-password" required placeholder="Enter your password"
+                                        aria-describedby="password-hint password-error" />
+                                    <button type="button" class="btn portal-toggle" data-toggle-password="password">Show</button>
+                                </div>
+                                <p id="password-hint" class="field-hint">Your session opens the dashboard immediately after sign-in.</p>
+                                <p id="password-error" class="field-error" role="alert"></p>
+                            </div>
+
+                            <button id="login-submit" class="btn portal-btn-primary w-100 mt-3" type="submit">Sign in</button>
+
+                            <p class="auth-footer">
+                                New here?
+                                <a href="register.html">Create an account</a>
+                            </p>
+                            <p class="auth-footer auth-footer-secondary">
+                                Prefer to start from the public site?
+                                <a href="../index.html">Return to landing page</a>
+                            </p>
+                        </form>
+                    </div>
+                </div>
             </div>
         </section>
     </main>
@@ -63,5 +110,4 @@
     <script src="../modules/user/user_api.js" defer></script>
     <script src="../modules/user/user.js" defer></script>
 </body>
-
 </html>

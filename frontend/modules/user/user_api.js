@@ -1,4 +1,11 @@
 (function () {
+    function authHeaders(token) {
+        return {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+        };
+    }
+
     async function readBodySafely(response) {
         const contentType = response.headers.get("content-type") || "";
         try {
@@ -91,12 +98,34 @@
     async function getProfile(token) {
         return await request("/profile", {
             method: "GET",
-            headers: {
-                "Accept": "application/json",
-                "Authorization": `Bearer ${token}`,
-            },
+            headers: authHeaders(token),
         });
     }
 
-    window.UserAPI = { registerUser, loginUser, getProfile };
+    async function updateProfile(token, { fullName, phone = null, imageFile = null, removeImage = false }) {
+        const body = new FormData();
+        body.append("full_name", fullName);
+        body.append("phone", phone || "");
+        if (imageFile) body.append("image", imageFile);
+        if (removeImage) body.append("remove_image", "true");
+
+        return await request("/profile", {
+            method: "PUT",
+            headers: authHeaders(token),
+            body,
+        });
+    }
+
+    async function updatePassword(token, payload) {
+        return await request("/profile/password", {
+            method: "PUT",
+            headers: {
+                ...authHeaders(token),
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        });
+    }
+
+    window.UserAPI = { registerUser, loginUser, getProfile, updateProfile, updatePassword };
 })();

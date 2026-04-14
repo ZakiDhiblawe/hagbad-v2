@@ -1,6 +1,7 @@
 (function () {
     const DEFAULT_API_BASE = "http://localhost:8000";
     const TOKEN_KEY = "hagbad_access_token";
+    const PROFILE_KEY = "hagbad_current_profile";
 
     function localStorageAvailable() {
         try {
@@ -20,6 +21,14 @@
         return fromMeta || DEFAULT_API_BASE;
     }
 
+    function buildApiUrl(path) {
+        if (!path) return "";
+        if (/^https?:\/\//i.test(path)) return path;
+        const base = getApiBase().replace(/\/+$/, "");
+        const suffix = String(path).startsWith("/") ? path : `/${path}`;
+        return `${base}${suffix}`;
+    }
+
     function getToken() {
         if (!localStorageAvailable()) return null;
         return window.localStorage.getItem(TOKEN_KEY);
@@ -30,13 +39,99 @@
         window.localStorage.setItem(TOKEN_KEY, token);
     }
 
+    function getStoredProfile() {
+        if (!localStorageAvailable()) return null;
+        const raw = window.localStorage.getItem(PROFILE_KEY);
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw);
+        } catch {
+            window.localStorage.removeItem(PROFILE_KEY);
+            return null;
+        }
+    }
+
+    function setStoredProfile(profile) {
+        if (!localStorageAvailable()) return;
+        if (!profile) {
+            window.localStorage.removeItem(PROFILE_KEY);
+            return;
+        }
+        window.localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    }
+
     function clearToken() {
         if (!localStorageAvailable()) return;
         window.localStorage.removeItem(TOKEN_KEY);
+        window.localStorage.removeItem(PROFILE_KEY);
     }
 
     function isAuthed() {
         return !!getToken();
+    }
+
+    function getRootPrefix() {
+        return document.body.dataset.root === "true" ? "" : "../";
+    }
+
+    function getDefaultProfileImage() {
+        return `${getRootPrefix()}assets/images/profile/user.png`;
+    }
+
+    function getProfileImageUrl(profile) {
+        if (profile && profile.profile_image) {
+            return buildApiUrl(profile.profile_image);
+        }
+        return getDefaultProfileImage();
+    }
+
+    function getDisplayName(profile) {
+        return profile && profile.full_name ? profile.full_name : "User";
+    }
+
+    async function fetchCurrentUser(force = false) {
+        const token = getToken();
+        if (!token) return null;
+
+        if (!force) {
+            const cached = getStoredProfile();
+            if (cached) return cached;
+        }
+
+        let response;
+        try {
+            response = await fetch(buildApiUrl("/profile"), {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${token}`,
+                },
+            });
+        } catch {
+            throw {
+                status: 0,
+                message: "Could not load your profile. Check backend connectivity.",
+            };
+        }
+
+        if (response.status === 401) {
+            clearToken();
+            throw {
+                status: 401,
+                message: "Session expired. Please log in again.",
+            };
+        }
+
+        if (!response.ok) {
+            throw {
+                status: response.status,
+                message: `Failed to load profile (${response.status}).`,
+            };
+        }
+
+        const profile = await response.json();
+        setStoredProfile(profile);
+        return profile;
     }
 
     function navigate(path) {
@@ -79,6 +174,83 @@
 
     function clearFieldError(input) {
         setFieldError(input, "");
+    }
+
+    function buildUserMenu(profile, { compact = false } = {}) {
+        const rootPrefix = getRootPrefix();
+        const wrapper = document.createElement("details");
+        wrapper.className = `user-menu${compact ? " compact" : ""}`;
+
+        const summary = document.createElement("summary");
+        summary.className = "user-menu-toggle";
+
+        const avatar = document.createElement("img");
+        avatar.className = "user-menu-avatar";
+        avatar.src = getProfileImageUrl(profile);
+        avatar.alt = `${getDisplayName(profile)} profile image`;
+        avatar.onerror = () => {
+            avatar.onerror = null;
+            avatar.src = getDefaultProfileImage();
+        };
+
+        const summaryCopy = document.createElement("span");
+        summaryCopy.className = "user-menu-copy";
+
+        const summaryName = document.createElement("span");
+        summaryName.className = "user-menu-name";
+        summaryName.textContent = getDisplayName(profile);
+
+        summaryCopy.appendChild(summaryName);
+        if (!compact) {
+            const summaryMeta = document.createElement("span");
+            summaryMeta.className = "user-menu-meta";
+            summaryMeta.textContent = "Workspace member";
+            summaryCopy.appendChild(summaryMeta);
+        }
+
+        const chevron = document.createElement("span");
+        chevron.className = "user-menu-chevron";
+        chevron.innerHTML = "&#9662;";
+
+        summary.appendChild(avatar);
+        if (!compact) summary.appendChild(summaryCopy);
+        summary.appendChild(chevron);
+
+        const panel = document.createElement("div");
+        panel.className = "user-menu-panel";
+
+        const label = document.createElement("div");
+        label.className = "user-menu-label";
+        label.textContent = getDisplayName(profile);
+
+        const profileLink = document.createElement("a");
+        profileLink.className = "user-menu-link";
+        profileLink.href = `${rootPrefix}pages/my_profile.html`;
+        profileLink.textContent = "My Profile";
+
+        const logoutBtn = document.createElement("button");
+        logoutBtn.type = "button";
+        logoutBtn.className = "user-menu-link primary-action";
+        logoutBtn.textContent = "Logout";
+        logoutBtn.addEventListener("click", () => {
+            clearToken();
+            showToast("Logged out", "info");
+            navigate(`${rootPrefix}index.html`);
+        });
+
+        panel.appendChild(label);
+        panel.appendChild(profileLink);
+        panel.appendChild(logoutBtn);
+
+        wrapper.appendChild(summary);
+        wrapper.appendChild(panel);
+        return wrapper;
+    }
+
+    function mountUserMenu(target, profile, options = {}) {
+        if (!target) return;
+        while (target.firstChild) target.removeChild(target.firstChild);
+        target.appendChild(buildUserMenu(profile, options));
     }
 
     function renderHeader(activePage = "") {
@@ -161,18 +333,17 @@
                     activePage === "join_requests"
                 )
             );
-            const logoutBtn = document.createElement("button");
-            logoutBtn.type = "button";
-            logoutBtn.textContent = "Logout";
-            logoutBtn.className = "btn-secondary";
-            logoutBtn.style.padding = "9px 12px";
-            logoutBtn.style.borderRadius = "10px";
-            logoutBtn.addEventListener("click", () => {
-                clearToken();
-                showToast("Logged out", "info");
-                navigate(loginHref);
-            });
-            nav.appendChild(logoutBtn);
+            const menuMount = document.createElement("div");
+            menuMount.className = "nav-user-mount";
+            nav.appendChild(menuMount);
+
+            const cachedProfile = getStoredProfile();
+            mountUserMenu(menuMount, cachedProfile, { compact: false });
+            fetchCurrentUser()
+                .then((profile) => mountUserMenu(menuMount, profile, { compact: false }))
+                .catch(() => {
+                    if (!cachedProfile) mountUserMenu(menuMount, null, { compact: false });
+                });
         } else {
             nav.appendChild(navLink("Login", loginHref, activePage === "login"));
             nav.appendChild(navLink("Register", registerHref, activePage === "register"));
@@ -188,9 +359,9 @@
         const token = getToken();
         if (!token) {
             showToast("Please log in to continue", "info");
-            const rootPrefix = document.body.dataset.root === "true" ? "" : "../";
-            navigate(`${rootPrefix}pages/login.html`);
-            return null;
+        const rootPrefix = document.body.dataset.root === "true" ? "" : "../";
+        navigate(`${rootPrefix}pages/login.html`);
+        return null;
         }
         return token;
     }
@@ -198,10 +369,19 @@
     window.APP = {
         TOKEN_KEY,
         getApiBase,
+        buildApiUrl,
         getToken,
         setToken,
         clearToken,
         isAuthed,
+        getRootPrefix,
+        getDefaultProfileImage,
+        getProfileImageUrl,
+        getDisplayName,
+        fetchCurrentUser,
+        getStoredProfile,
+        setStoredProfile,
+        mountUserMenu,
         navigate,
         showToast,
         setButtonLoading,
