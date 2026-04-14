@@ -4,112 +4,211 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="api-base" content="http://localhost:8000" />
-  <title>Payments • Hagbad</title>
+  <title>Payments | Hagbad</title>
+  <link rel="shortcut icon" type="image/png" href="../assets/images/logos/favicon.png" />
+  <link rel="stylesheet" href="../assets/css/styles.min.css" />
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/portal.css" />
 </head>
 
-<body data-page="payments" data-root="false">
-  <div id="app-header"></div>
+<body data-page="payments" data-root="false" class="portal-body dashboard-body">
+  <div class="page-wrapper" id="main-wrapper" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+    data-sidebar-position="fixed" data-header-position="fixed">
+    <aside class="left-sidebar">
+      <div>
+        <div class="brand-logo d-flex align-items-center justify-content-between">
+          <a id="group-brand-link" href="dashboard.html" class="dashboard-brand">
+            <span class="dashboard-brand-icon-wrap">
+              <img src="../assets/images/logos/favicon.png" alt="Hagbad icon" class="dashboard-brand-icon" />
+            </span>
+            <span class="portal-brand-copy">
+              <span class="portal-brand-name">Hagbad</span>
+              <span class="portal-brand-subtitle">Group workspace</span>
+            </span>
+          </a>
+          <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
+            <i class="ti ti-x fs-6"></i>
+          </div>
+        </div>
 
-  <main class="container" aria-labelledby="page-title">
-    <div class="hero">
-      <h1 id="page-title">Payments</h1>
-      <p id="cycle-subtitle">Track due, paid, and late records.</p>
+        <nav class="sidebar-nav scroll-sidebar" aria-label="Sidebar">
+          <ul id="sidebarnav">
+            <li class="nav-small-cap"><span class="hide-menu">Main</span></li>
+            <li class="sidebar-item">
+              <a id="group-nav-dashboard" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-layout-dashboard"></i>
+                <span class="hide-menu">Dashboard</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-cycles" class="sidebar-link primary-hover-bg active" href="#" aria-expanded="false">
+                <i class="ti ti-refresh"></i>
+                <span class="hide-menu">My Cycles</span>
+              </a>
+            </li>
+            <li class="nav-small-cap"><span class="hide-menu">Sections</span></li>
+            <li class="sidebar-item">
+              <a id="group-nav-settings" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-adjustments-horizontal"></i>
+                <span class="hide-menu">Settings</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-members" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-users"></i>
+                <span class="hide-menu">Members</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-requests" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-user-question"></i>
+                <span class="hide-menu">Join Requests</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-invites" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-ticket"></i>
+                <span class="hide-menu">Invite</span>
+              </a>
+            </li>
+            <li id="group-admin-cap" class="nav-small-cap" hidden><span class="hide-menu">Admin</span></li>
+            <li id="group-nav-update-item" class="sidebar-item" hidden>
+              <a id="group-nav-update" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-edit"></i>
+                <span class="hide-menu">Update Group</span>
+              </a>
+            </li>
+            <li id="group-nav-add-cycle-item" class="sidebar-item" hidden>
+              <a id="group-nav-add-cycle" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-plus"></i>
+                <span class="hide-menu">Add New Cycle</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </aside>
+
+    <div class="body-wrapper">
+      <header class="app-header">
+        <nav class="navbar navbar-expand-lg navbar-light dashboard-topbar">
+          <div class="container-fluid p-0">
+            <div class="d-flex align-items-center gap-3">
+              <a class="nav-link d-xl-none p-0 sidebartoggler" href="javascript:void(0)" aria-label="Toggle sidebar">
+                <i class="ti ti-menu-2 fs-7"></i>
+              </a>
+              <div class="workspace-page-copy">
+                <div id="page-title-label" class="portal-mini-title">Group workspace</div>
+                <h1 id="page-title-heading">Payments</h1>
+              </div>
+            </div>
+            <div id="workspace-user-menu" class="ms-auto"></div>
+          </div>
+        </nav>
+      </header>
+
+      <div class="container-fluid py-4">
+        <div class="workspace-legacy-stack">
+          <section id="summary-card" class="dashboard-panel card workspace-legacy-card" hidden>
+            <div class="card-header">
+              <h2>Cycle payment summary</h2>
+              <p id="permissions-note" class="hint"></p>
+            </div>
+            <div class="card-body">
+              <div id="summary-error" class="form-error" role="alert" hidden></div>
+              <div id="summary-grid" class="stats-grid"></div>
+            </div>
+          </section>
+
+          <section class="dashboard-panel card workspace-legacy-card">
+            <div class="card-body">
+              <div class="workspace-legacy-intro">
+                <div>
+                  <h2 id="cycle-title">Loading payments...</h2>
+                  <p id="cycle-subtitle">Track due, paid, and late contribution records for this cycle.</p>
+                </div>
+              </div>
+
+              <p id="permissions-note-main" class="dashboard-note mb-3"></p>
+              <div id="page-error" class="form-error" role="alert" hidden></div>
+
+              <div class="toolbar" role="group" aria-label="Payment actions">
+                <div class="toolbar-left">
+                  <button id="open-cycle" class="btn btn-secondary" type="button">Cycle</button>
+                  <button id="open-participants" class="btn btn-secondary" type="button">Participants</button>
+                  <button id="open-payouts" class="btn btn-secondary" type="button">Payouts</button>
+                </div>
+                <div class="toolbar-right">
+                  <button id="refresh" class="btn btn-secondary" type="button">Refresh</button>
+                  <button id="open-create" class="btn" type="button">Create payment</button>
+                </div>
+              </div>
+
+              <div class="workspace-form-grid cols-2 mb-3">
+                <select id="cycle_member_id" class="select" aria-label="Filter by participant"></select>
+                <select id="status-filter" class="select" aria-label="Filter by payment status">
+                  <option value="">All statuses</option>
+                  <option value="due">Due</option>
+                  <option value="paid">Paid</option>
+                  <option value="late">Late</option>
+                </select>
+                <input id="due_from" type="date" aria-label="Due from" />
+                <input id="due_to" type="date" aria-label="Due to" />
+              </div>
+
+              <div id="list-status" class="dashboard-note mb-3" aria-live="polite"></div>
+              <ul id="payments-list" class="list" aria-label="Payments"></ul>
+
+              <div class="pager" aria-label="Pagination">
+                <button id="prev" class="btn btn-secondary" type="button">Prev</button>
+                <span id="page-label" class="dashboard-note">Page 1</span>
+                <button id="next" class="btn btn-secondary" type="button">Next</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
-
-    <section id="summary-card" class="card" aria-label="Payment summary" hidden>
-      <div class="card-header">
-        <h2>Cycle summary</h2>
-        <p id="permissions-note" class="hint"></p>
-      </div>
-      <div class="card-body">
-        <div id="summary-error" class="form-error" role="alert" hidden></div>
-        <div id="summary-grid" class="stats-grid"></div>
-      </div>
-    </section>
-
-    <section class="card" aria-label="Payments">
-      <div class="card-header">
-        <h2 id="cycle-title">—</h2>
-        <p id="permissions-note-main" class="hint"></p>
-        <p class="hint">Core accounting data for each cycle member contribution.</p>
-      </div>
-
-      <div class="card-body">
-        <div id="page-error" class="form-error" role="alert" hidden></div>
-
-        <div class="toolbar" role="group" aria-label="Payment actions">
-          <div class="toolbar-left">
-            <button id="open-cycle" class="btn btn-secondary" type="button">Cycle</button>
-            <button id="open-participants" class="btn btn-secondary" type="button">Participants</button>
-            <button id="open-payouts" class="btn btn-secondary" type="button">Payouts</button>
-          </div>
-          <div class="toolbar-right">
-            <button id="refresh" class="btn btn-secondary" type="button">Refresh</button>
-            <button id="open-create" class="btn" type="button">Create payment</button>
-          </div>
-        </div>
-
-        <div class="stack" style="margin-top:12px;">
-          <select id="cycle_member_id" class="select" aria-label="Filter by participant"></select>
-          <select id="status-filter" class="select" aria-label="Filter by payment status">
-            <option value="">All statuses</option>
-            <option value="due">Due</option>
-            <option value="paid">Paid</option>
-            <option value="late">Late</option>
-          </select>
-          <input id="due_from" type="date" aria-label="Due from" />
-          <input id="due_to" type="date" aria-label="Due to" />
-        </div>
-
-        <div id="list-status" class="hint" aria-live="polite"></div>
-        <ul id="payments-list" class="list" aria-label="Payments"></ul>
-
-        <div class="pager" aria-label="Pagination">
-          <button id="prev" class="btn btn-secondary" type="button">Prev</button>
-          <span id="page-label" class="hint">Page 1</span>
-          <button id="next" class="btn btn-secondary" type="button">Next</button>
-        </div>
-      </div>
-    </section>
-  </main>
+  </div>
 
   <div id="modal-overlay" class="modal-overlay" hidden></div>
   <div id="create-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="create-title" hidden>
     <h3 id="create-title">Create payment</h3>
-    <p class="hint">Create one accounting record for one cycle member and one due date.</p>
+    <p class="hint">Create one accounting record for one cycle participant and one due date.</p>
 
     <form id="create-form" novalidate>
       <div id="form-error" class="form-error" role="alert" hidden></div>
 
-      <div class="field">
-        <label for="create_cycle_member_id">Cycle participant</label>
-        <select id="create_cycle_member_id" class="select"></select>
-      </div>
+      <div class="workspace-form-grid cols-2">
+        <div class="field">
+          <label for="create_cycle_member_id">Cycle participant</label>
+          <select id="create_cycle_member_id" class="select"></select>
+        </div>
 
-      <div class="field">
-        <label for="create_due_date">Due date</label>
-        <input id="create_due_date" type="date" />
-      </div>
+        <div class="field">
+          <label for="create_due_date">Due date</label>
+          <input id="create_due_date" type="date" />
+        </div>
 
-      <div class="field">
-        <label for="create_amount_due">Amount due (optional)</label>
-        <input id="create_amount_due" type="number" min="0.01" step="0.01" placeholder="Leave empty to use group settings amount" />
-      </div>
+        <div class="field">
+          <label for="create_amount_due">Amount due (optional)</label>
+          <input id="create_amount_due" type="number" min="0.01" step="0.01" placeholder="Use settings amount if empty" />
+        </div>
 
-      <div class="field">
-        <label for="create_amount_paid">Amount paid</label>
-        <input id="create_amount_paid" type="number" min="0" step="0.01" value="0.00" />
-      </div>
+        <div class="field">
+          <label for="create_amount_paid">Amount paid</label>
+          <input id="create_amount_paid" type="number" min="0" step="0.01" value="0.00" />
+        </div>
 
-      <div class="field">
-        <label for="create_paid_at">Paid at (optional)</label>
-        <input id="create_paid_at" type="datetime-local" />
-      </div>
+        <div class="field">
+          <label for="create_paid_at">Paid at (optional)</label>
+          <input id="create_paid_at" type="datetime-local" />
+        </div>
 
-      <div class="field">
-        <label for="create_notes">Notes</label>
-        <textarea id="create_notes" class="textarea" rows="3" maxlength="2000"></textarea>
+        <div class="field">
+          <label for="create_notes">Notes</label>
+          <textarea id="create_notes" class="textarea" rows="3" maxlength="2000"></textarea>
+        </div>
       </div>
 
       <div class="modal-actions">
@@ -121,6 +220,10 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
+  <script src="../assets/libs/jquery/dist/jquery.min.js"></script>
+  <script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/js/app.min.js"></script>
+  <script src="../assets/js/sidebarmenu.js"></script>
   <script src="../js/app.js" defer></script>
   <script src="../modules/user/user_api.js" defer></script>
   <script src="../modules/group/group_api.js" defer></script>

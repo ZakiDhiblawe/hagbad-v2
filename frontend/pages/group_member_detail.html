@@ -4,64 +4,122 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="api-base" content="http://localhost:8000" />
-  <title>Member • Hagbad</title>
+  <title>Member Detail | Hagbad</title>
+  <link rel="shortcut icon" type="image/png" href="../assets/images/logos/favicon.png" />
+  <link rel="stylesheet" href="../assets/css/styles.min.css" />
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/portal.css" />
 </head>
 
-<body data-page="group_member_detail" data-root="false">
-  <div id="app-header"></div>
+<body data-page="group_member_detail" data-root="false" class="portal-body dashboard-body">
+  <div class="page-wrapper" id="main-wrapper" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+    data-sidebar-position="fixed" data-header-position="fixed">
+    <aside class="left-sidebar">
+      <div>
+        <div class="brand-logo d-flex align-items-center justify-content-between">
+          <a id="group-brand-link" href="dashboard.html" class="dashboard-brand">
+            <span class="dashboard-brand-icon-wrap">
+              <img src="../assets/images/logos/favicon.png" alt="Hagbad icon" class="dashboard-brand-icon" />
+            </span>
+            <span class="portal-brand-copy">
+              <span class="portal-brand-name">Hagbad</span>
+              <span class="portal-brand-subtitle">Group workspace</span>
+            </span>
+          </a>
+          <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
+            <i class="ti ti-x fs-6"></i>
+          </div>
+        </div>
 
-  <main class="container" aria-labelledby="page-title">
-    <div class="hero">
-      <h1 id="page-title">Member details</h1>
-      <p id="subtitle">Loading…</p>
+        <nav class="sidebar-nav scroll-sidebar" aria-label="Sidebar">
+          <ul id="sidebarnav">
+            <li class="nav-small-cap"><span class="hide-menu">Main</span></li>
+            <li class="sidebar-item"><a id="group-nav-dashboard" class="sidebar-link primary-hover-bg" href="#"><i class="ti ti-layout-dashboard"></i><span class="hide-menu">Dashboard</span></a></li>
+            <li class="sidebar-item"><a id="group-nav-cycles" class="sidebar-link primary-hover-bg" href="#"><i class="ti ti-refresh"></i><span class="hide-menu">My Cycles</span></a></li>
+            <li class="nav-small-cap"><span class="hide-menu">Sections</span></li>
+            <li class="sidebar-item"><a id="group-nav-settings" class="sidebar-link primary-hover-bg" href="#"><i class="ti ti-adjustments-horizontal"></i><span class="hide-menu">Settings</span></a></li>
+            <li class="sidebar-item"><a id="group-nav-members" class="sidebar-link primary-hover-bg active" href="#"><i class="ti ti-users"></i><span class="hide-menu">Members</span></a></li>
+            <li class="sidebar-item"><a id="group-nav-requests" class="sidebar-link primary-hover-bg" href="#"><i class="ti ti-user-question"></i><span class="hide-menu">Join Requests</span></a></li>
+            <li class="sidebar-item"><a id="group-nav-invites" class="sidebar-link primary-hover-bg" href="#"><i class="ti ti-ticket"></i><span class="hide-menu">Invite</span></a></li>
+            <li id="group-admin-cap" class="nav-small-cap" hidden><span class="hide-menu">Admin</span></li>
+            <li id="group-nav-update-item" class="sidebar-item" hidden><a id="group-nav-update" class="sidebar-link primary-hover-bg" href="#"><i class="ti ti-edit"></i><span class="hide-menu">Update Group</span></a></li>
+            <li id="group-nav-add-cycle-item" class="sidebar-item" hidden><a id="group-nav-add-cycle" class="sidebar-link primary-hover-bg" href="#"><i class="ti ti-plus"></i><span class="hide-menu">Add New Cycle</span></a></li>
+          </ul>
+        </nav>
+      </div>
+    </aside>
+
+    <div class="body-wrapper">
+      <header class="app-header">
+        <nav class="navbar navbar-expand-lg navbar-light dashboard-topbar">
+          <div class="container-fluid p-0">
+            <div class="d-flex align-items-center gap-3">
+              <a class="nav-link d-xl-none p-0 sidebartoggler" href="javascript:void(0)" aria-label="Toggle sidebar"><i class="ti ti-menu-2 fs-7"></i></a>
+              <div class="workspace-page-copy">
+                <div id="page-title-label" class="portal-mini-title">Group workspace</div>
+                <h1 id="page-title-heading">Member Detail</h1>
+              </div>
+            </div>
+            <div id="workspace-user-menu" class="ms-auto"></div>
+          </div>
+        </nav>
+      </header>
+
+      <div class="container-fluid py-4">
+        <section class="dashboard-panel card workspace-legacy-card">
+          <div class="card-body">
+            <div class="workspace-legacy-intro">
+              <div>
+                <h2 id="m-title">Loading member...</h2>
+                <p id="subtitle">Preparing member detail.</p>
+              </div>
+              <p id="m-badges" class="dashboard-note mb-0">Loading role</p>
+            </div>
+
+            <div id="page-error" class="form-error" role="alert" hidden></div>
+            <dl id="grid" class="profile-grid"></dl>
+            <div id="perm-note" class="dashboard-note mt-3" aria-live="polite"></div>
+
+            <div id="manage" hidden>
+              <form id="role-form" novalidate class="stack mt-3">
+                <div id="form-error" class="form-error" role="alert" hidden></div>
+                <div id="form-success" class="form-success" role="status" hidden></div>
+
+                <div class="workspace-form-grid cols-2">
+                  <div class="field">
+                    <label for="role">Role</label>
+                    <select id="role" class="select">
+                      <option value="member">Member</option>
+                      <option value="moderator">Moderator</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="modal-actions">
+                  <button id="save" class="btn" type="submit">Save</button>
+                  <button id="remove" class="btn btn-secondary" type="button">Remove member</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="toolbar mt-3">
+              <div class="toolbar-right">
+                <button id="back" class="btn btn-secondary" type="button">Back</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
-
-    <section class="card" aria-label="Member detail">
-      <div class="card-header">
-        <h2 id="m-title">—</h2>
-        <p id="m-badges" class="hint"></p>
-      </div>
-
-      <div class="card-body">
-        <div id="page-error" class="form-error" role="alert" hidden></div>
-
-        <dl id="grid" class="profile-grid"></dl>
-
-        <div id="perm-note" class="hint" aria-live="polite"></div>
-
-        <div id="manage" hidden>
-          <h3 style="margin:14px 0 6px;">Manage role</h3>
-          <form id="role-form" novalidate>
-            <div id="form-error" class="form-error" role="alert" hidden></div>
-            <div id="form-success" class="form-success" role="status" hidden></div>
-
-            <div class="field">
-              <label for="role">Role</label>
-              <select id="role" class="select">
-                <option value="member">Member</option>
-                <option value="moderator">Moderator</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-
-            <div class="split">
-              <button id="save" class="btn" type="submit">Save</button>
-              <button id="remove" class="btn btn-secondary" type="button">Remove member</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="split" style="margin-top:16px;">
-          <button id="back" class="btn btn-secondary" type="button">Back</button>
-          <button class="btn btn-secondary" type="button" onclick="APP.navigate('../index.html')">Home</button>
-        </div>
-      </div>
-    </section>
-  </main>
+  </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
+  <script src="../assets/libs/jquery/dist/jquery.min.js"></script>
+  <script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/js/app.min.js"></script>
+  <script src="../assets/js/sidebarmenu.js"></script>
   <script src="../js/app.js" defer></script>
   <script src="../modules/user/user_api.js" defer></script>
   <script src="../modules/group_member/group_member_api.js" defer></script>

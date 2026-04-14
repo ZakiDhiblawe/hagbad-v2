@@ -28,6 +28,24 @@
     el.textContent = message || "";
   }
 
+  function mountWorkspaceMenu(profile) {
+    const mount = qs("#workspace-user-menu");
+    if (!mount || !profile) return;
+    APP.mountUserMenu(mount, profile, { compact: false });
+  }
+
+  function applyGroupWorkspace(profile, group, role, activeKey, pageTitle) {
+    if (!group) return;
+    mountWorkspaceMenu(profile);
+    APP.applyGroupWorkspaceNav({
+      groupId: group.id,
+      activeKey,
+      pageTitle,
+      canUpdateGroup: Number(group.created_by) === Number(profile.id),
+      canCreateCycle: Number(group.created_by) === Number(profile.id) || role === "admin",
+    });
+  }
+
   async function ensureProfile() {
     const token = APP.requireAuthOrRedirect();
     if (!token) return null;
@@ -184,6 +202,7 @@
     if (!APP.requireAuthOrRedirect()) return;
 
     const groupId = Number(qparam("group_id"));
+    const openMode = qparam("open");
     if (!groupId) {
       setMessage("#page-error", "Missing group_id. Open this page like cycles.html?group_id=1");
       return;
@@ -195,6 +214,15 @@
     const group = await GroupAPI.getGroup(groupId);
     const role = await myRole(groupId, profile.id).catch(() => null);
     const canManage = Number(group.created_by) === Number(profile.id) || role === "admin";
+    const openCreateFromMenu = openMode === "create";
+
+    applyGroupWorkspace(
+      profile,
+      group,
+      role,
+      openCreateFromMenu ? "add_cycle" : "cycles",
+      openCreateFromMenu ? "Add New Cycle" : "My Cycles"
+    );
 
     text(qs("#group-name"), group.name);
     text(qs("#group-subtitle"), `Cycles for group #${groupId}`);
@@ -312,6 +340,14 @@
       }
     });
 
+    if (openCreateFromMenu) {
+      if (canManage) {
+        openModal();
+      } else {
+        APP.showToast("Only the group creator or an admin can add a cycle.", "error");
+      }
+    }
+
     await load();
   }
 
@@ -331,6 +367,8 @@
     const group = await GroupAPI.getGroup(cycle.group_id);
     const role = await myRole(cycle.group_id, profile.id).catch(() => null);
     const canManage = Number(group.created_by) === Number(profile.id) || role === "admin";
+
+    applyGroupWorkspace(profile, group, role, "cycles", "Cycle Detail");
 
     qs("#back").addEventListener("click", () => APP.navigate(`cycles.html?group_id=${cycle.group_id}`));
     qs("#open-participants").addEventListener("click", () => {

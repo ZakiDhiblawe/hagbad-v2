@@ -3,6 +3,24 @@
   function show(el, yes) { if (el) el.hidden = !yes; }
   function text(el, v) { if (el) el.textContent = v; }
 
+  function mountWorkspaceMenu(profile) {
+    const mount = qs("#workspace-user-menu");
+    if (!mount || !profile) return;
+    APP.mountUserMenu(mount, profile, { compact: false });
+  }
+
+  function applyGroupWorkspace(profile, group, role, pageTitle) {
+    if (!group) return;
+    mountWorkspaceMenu(profile);
+    APP.applyGroupWorkspaceNav({
+      groupId: group.id,
+      activeKey: "settings",
+      pageTitle,
+      canUpdateGroup: Number(group.created_by) === Number(profile.id),
+      canCreateCycle: Number(group.created_by) === Number(profile.id) || role === "admin",
+    });
+  }
+
   function getGroupId() {
     const u = new URL(window.location.href);
     return Number(u.searchParams.get("group_id") || u.searchParams.get("id") || 0);
@@ -158,6 +176,7 @@
 
     const role = await myAdminRole(groupId, me.id);
     const canManage = Number(group.created_by) === Number(me.id) || role === "admin";
+    applyGroupWorkspace(me, group, role, "Settings");
 
     text(qs("#perm-note"), canManage
       ? "You can manage settings (creator/admin)."
@@ -249,6 +268,7 @@
 
     const role = await myAdminRole(groupId, me.id);
     const canManage = Number(group.created_by) === Number(me.id) || role === "admin";
+    applyGroupWorkspace(me, group, role, "Settings Detail");
 
     text(qs("#perm-note"), canManage ? "Creator/admin: you can edit/delete." : "View only.");
 

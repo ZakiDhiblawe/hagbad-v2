@@ -4,52 +4,147 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="api-base" content="http://localhost:8000" />
-  <title>Cycle Participants • Hagbad</title>
+  <title>Cycle Participants | Hagbad</title>
+  <link rel="shortcut icon" type="image/png" href="../assets/images/logos/favicon.png" />
+  <link rel="stylesheet" href="../assets/css/styles.min.css" />
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/portal.css" />
 </head>
 
-<body data-page="cycle_members" data-root="false">
-  <div id="app-header"></div>
+<body data-page="cycle_members" data-root="false" class="portal-body dashboard-body">
+  <div class="page-wrapper" id="main-wrapper" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+    data-sidebar-position="fixed" data-header-position="fixed">
+    <aside class="left-sidebar">
+      <div>
+        <div class="brand-logo d-flex align-items-center justify-content-between">
+          <a id="group-brand-link" href="dashboard.html" class="dashboard-brand">
+            <span class="dashboard-brand-icon-wrap">
+              <img src="../assets/images/logos/favicon.png" alt="Hagbad icon" class="dashboard-brand-icon" />
+            </span>
+            <span class="portal-brand-copy">
+              <span class="portal-brand-name">Hagbad</span>
+              <span class="portal-brand-subtitle">Group workspace</span>
+            </span>
+          </a>
+          <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
+            <i class="ti ti-x fs-6"></i>
+          </div>
+        </div>
 
-  <main class="container" aria-labelledby="page-title">
-    <div class="hero">
-      <h1 id="page-title">Cycle participants</h1>
-      <p id="cycle-subtitle">Participation and payout order setup.</p>
+        <nav class="sidebar-nav scroll-sidebar" aria-label="Sidebar">
+          <ul id="sidebarnav">
+            <li class="nav-small-cap"><span class="hide-menu">Main</span></li>
+            <li class="sidebar-item">
+              <a id="group-nav-dashboard" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-layout-dashboard"></i>
+                <span class="hide-menu">Dashboard</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-cycles" class="sidebar-link primary-hover-bg active" href="#" aria-expanded="false">
+                <i class="ti ti-refresh"></i>
+                <span class="hide-menu">My Cycles</span>
+              </a>
+            </li>
+            <li class="nav-small-cap"><span class="hide-menu">Sections</span></li>
+            <li class="sidebar-item">
+              <a id="group-nav-settings" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-adjustments-horizontal"></i>
+                <span class="hide-menu">Settings</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-members" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-users"></i>
+                <span class="hide-menu">Members</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-requests" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-user-question"></i>
+                <span class="hide-menu">Join Requests</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-invites" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-ticket"></i>
+                <span class="hide-menu">Invite</span>
+              </a>
+            </li>
+            <li id="group-admin-cap" class="nav-small-cap" hidden><span class="hide-menu">Admin</span></li>
+            <li id="group-nav-update-item" class="sidebar-item" hidden>
+              <a id="group-nav-update" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-edit"></i>
+                <span class="hide-menu">Update Group</span>
+              </a>
+            </li>
+            <li id="group-nav-add-cycle-item" class="sidebar-item" hidden>
+              <a id="group-nav-add-cycle" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-plus"></i>
+                <span class="hide-menu">Add New Cycle</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </aside>
+
+    <div class="body-wrapper">
+      <header class="app-header">
+        <nav class="navbar navbar-expand-lg navbar-light dashboard-topbar">
+          <div class="container-fluid p-0">
+            <div class="d-flex align-items-center gap-3">
+              <a class="nav-link d-xl-none p-0 sidebartoggler" href="javascript:void(0)" aria-label="Toggle sidebar">
+                <i class="ti ti-menu-2 fs-7"></i>
+              </a>
+              <div class="workspace-page-copy">
+                <div id="page-title-label" class="portal-mini-title">Group workspace</div>
+                <h1 id="page-title-heading">Cycle Participants</h1>
+              </div>
+            </div>
+            <div id="workspace-user-menu" class="ms-auto"></div>
+          </div>
+        </nav>
+      </header>
+
+      <div class="container-fluid py-4">
+        <section class="dashboard-panel card workspace-legacy-card">
+          <div class="card-body">
+            <div class="workspace-legacy-intro">
+              <div>
+                <h2 id="cycle-title">Loading participants...</h2>
+                <p id="cycle-subtitle">Participation and payout order setup for the selected cycle.</p>
+              </div>
+                <p id="permissions-note" class="dashboard-note mb-0">Checking permissions</p>
+            </div>
+
+            <div id="page-error" class="form-error" role="alert" hidden></div>
+
+            <div class="toolbar" role="group" aria-label="Cycle participant actions">
+              <div class="toolbar-left">
+                <button id="open-cycle" class="btn btn-secondary" type="button">Cycle</button>
+                <button id="open-group-members" class="btn btn-secondary" type="button">Group members</button>
+              </div>
+              <div class="toolbar-right">
+                <input id="order-filter" type="number" min="1" step="1" placeholder="Filter order" aria-label="Filter by payout order" />
+                <button id="refresh" class="btn btn-secondary" type="button">Refresh</button>
+                <button id="open-add" class="btn" type="button">Add participant</button>
+              </div>
+            </div>
+
+            <div id="list-status" class="dashboard-note mb-3" aria-live="polite"></div>
+            <ul id="participants-list" class="list" aria-label="Cycle participants"></ul>
+
+            <div class="pager" aria-label="Pagination">
+              <button id="prev" class="btn btn-secondary" type="button">Prev</button>
+              <span id="page-label" class="dashboard-note">Page 1</span>
+              <button id="next" class="btn btn-secondary" type="button">Next</button>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
-
-    <section class="card" aria-label="Cycle participants">
-      <div class="card-header">
-        <h2 id="cycle-title">—</h2>
-        <p id="permissions-note" class="hint"></p>
-        <p class="hint">Set participation and payout order here before payments or payouts.</p>
-      </div>
-
-      <div class="card-body">
-        <div id="page-error" class="form-error" role="alert" hidden></div>
-
-        <div class="toolbar" role="group" aria-label="Cycle participant actions">
-          <div class="toolbar-left">
-            <button id="open-cycle" class="btn btn-secondary" type="button">Cycle</button>
-            <button id="open-group-members" class="btn btn-secondary" type="button">Group members</button>
-          </div>
-          <div class="toolbar-right">
-            <input id="order-filter" type="number" min="1" step="1" placeholder="Filter order" aria-label="Filter by payout order" />
-            <button id="refresh" class="btn btn-secondary" type="button">Refresh</button>
-            <button id="open-add" class="btn" type="button">Add participant</button>
-          </div>
-        </div>
-
-        <div id="list-status" class="hint" aria-live="polite"></div>
-        <ul id="participants-list" class="list" aria-label="Cycle participants"></ul>
-
-        <div class="pager" aria-label="Pagination">
-          <button id="prev" class="btn btn-secondary" type="button">Prev</button>
-          <span id="page-label" class="hint">Page 1</span>
-          <button id="next" class="btn btn-secondary" type="button">Next</button>
-        </div>
-      </div>
-    </section>
-  </main>
+  </div>
 
   <div id="modal-overlay" class="modal-overlay" hidden></div>
   <div id="add-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="add-title" hidden>
@@ -59,16 +154,18 @@
     <form id="add-form" novalidate>
       <div id="form-error" class="form-error" role="alert" hidden></div>
 
-      <div class="field">
-        <label for="user_id">Group member</label>
-        <select id="user_id" class="select">
-          <option value="">Select group member</option>
-        </select>
-      </div>
+      <div class="workspace-form-grid cols-2">
+        <div class="field">
+          <label for="user_id">Group member</label>
+          <select id="user_id" class="select">
+            <option value="">Select group member</option>
+          </select>
+        </div>
 
-      <div class="field">
-        <label for="payout_order">Payout order (optional)</label>
-        <input id="payout_order" type="number" min="1" step="1" placeholder="Leave empty to auto-assign next order" />
+        <div class="field">
+          <label for="payout_order">Payout order (optional)</label>
+          <input id="payout_order" type="number" min="1" step="1" placeholder="Leave empty to auto-assign next order" />
+        </div>
       </div>
 
       <div class="modal-actions">
@@ -80,6 +177,10 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
+  <script src="../assets/libs/jquery/dist/jquery.min.js"></script>
+  <script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/js/app.min.js"></script>
+  <script src="../assets/js/sidebarmenu.js"></script>
   <script src="../js/app.js" defer></script>
   <script src="../modules/user/user_api.js" defer></script>
   <script src="../modules/group/group_api.js" defer></script>

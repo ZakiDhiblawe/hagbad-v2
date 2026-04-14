@@ -1,69 +1,170 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Group Review - Hagbad</title>
-    <link rel="stylesheet" href="../css/style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="api-base" content="http://localhost:8000" />
+  <title>Join Requests | Hagbad</title>
+  <link rel="shortcut icon" type="image/png" href="../assets/images/logos/favicon.png" />
+  <link rel="stylesheet" href="../assets/css/styles.min.css" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/portal.css" />
 </head>
-<body data-page="group_review">
-    <div id="app-header"></div>
-
-    <main class="page-shell">
-        <section class="page-head">
-            <div>
-                <h1>Group Review</h1>
-                <p>Review join requests for groups you manage.</p>
-            </div>
-
-            <div class="btn-row">
-                <button id="back-to-groups" class="btn btn-secondary" type="button">Back to Groups</button>
-                <button id="refresh-page" class="btn btn-secondary" type="button">Refresh</button>
-            </div>
-        </section>
-
-        <div class="layout" style="grid-template-columns: 1fr;">
-            <section class="panel">
-                <h2>Group Review</h2>
-                <p class="panel-subtitle">Creator or admin can review pending requests for all groups they manage.</p>
-
-                <div id="admin-error" class="alert error" hidden></div>
-                <div id="admin-success" class="alert success" hidden></div>
-                <div id="admin-info" class="alert info" hidden></div>
-
-                <div class="field">
-                    <label for="admin_group_id">Group ID to review</label>
-                    <input id="admin_group_id" type="number" min="1" placeholder="Enter group id" />
-                    <div class="helper-text">Leave this empty to see requests from all groups you manage.</div>
-                </div>
-
-                <div class="field">
-                    <label for="status_filter">Filter by status</label>
-                    <select id="status_filter">
-                        <option value="">All</option>
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
-                    </select>
-                </div>
-
-                <div class="btn-row">
-                    <button id="load-group-requests-btn" class="btn btn-primary" type="button">Load Group Requests</button>
-                </div>
-
-                <div class="muted-box" style="margin-top:16px;">
-                    Approve or reject requests here. Approving adds the user into group members as <strong>member</strong>.
-                </div>
-
-                <div id="group-request-list" class="request-list"></div>
-            </section>
+<body data-page="group_review" data-root="false" class="portal-body dashboard-body">
+  <div class="page-wrapper" id="main-wrapper" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+    data-sidebar-position="fixed" data-header-position="fixed">
+    <aside class="left-sidebar">
+      <div>
+        <div class="brand-logo d-flex align-items-center justify-content-between">
+          <a id="group-brand-link" href="dashboard.html" class="dashboard-brand">
+            <span class="dashboard-brand-icon-wrap">
+              <img src="../assets/images/logos/favicon.png" alt="Hagbad icon" class="dashboard-brand-icon" />
+            </span>
+            <span class="portal-brand-copy">
+              <span class="portal-brand-name">Hagbad</span>
+              <span class="portal-brand-subtitle">Group workspace</span>
+            </span>
+          </a>
+          <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
+            <i class="ti ti-x fs-6"></i>
+          </div>
         </div>
-    </main>
 
-    <div id="toast" class="toast"></div>
+        <nav class="sidebar-nav scroll-sidebar" aria-label="Sidebar">
+          <ul id="sidebarnav">
+            <li class="nav-small-cap"><span class="hide-menu">Main</span></li>
+            <li class="sidebar-item">
+              <a id="group-nav-dashboard" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-layout-dashboard"></i>
+                <span class="hide-menu">Dashboard</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-cycles" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-refresh"></i>
+                <span class="hide-menu">My Cycles</span>
+              </a>
+            </li>
+            <li class="nav-small-cap"><span class="hide-menu">Sections</span></li>
+            <li class="sidebar-item">
+              <a id="group-nav-settings" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-adjustments-horizontal"></i>
+                <span class="hide-menu">Settings</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-members" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-users"></i>
+                <span class="hide-menu">Members</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-requests" class="sidebar-link primary-hover-bg active" href="#" aria-expanded="false">
+                <i class="ti ti-user-question"></i>
+                <span class="hide-menu">Join Requests</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-invites" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-ticket"></i>
+                <span class="hide-menu">Invite</span>
+              </a>
+            </li>
+            <li id="group-admin-cap" class="nav-small-cap" hidden><span class="hide-menu">Admin</span></li>
+            <li id="group-nav-update-item" class="sidebar-item" hidden>
+              <a id="group-nav-update" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-edit"></i>
+                <span class="hide-menu">Update Group</span>
+              </a>
+            </li>
+            <li id="group-nav-add-cycle-item" class="sidebar-item" hidden>
+              <a id="group-nav-add-cycle" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-plus"></i>
+                <span class="hide-menu">Add New Cycle</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </aside>
 
-    <script src="../js/app.js?v=5"></script>
-    <script src="../modules/join_request/join_request_api.js?v=4"></script>
-    <script src="../modules/join_request/join_request.js?v=4"></script>
+    <div class="body-wrapper">
+      <header class="app-header">
+        <nav class="navbar navbar-expand-lg navbar-light dashboard-topbar">
+          <div class="container-fluid p-0">
+            <div class="d-flex align-items-center gap-3">
+              <a class="nav-link d-xl-none p-0 sidebartoggler" href="javascript:void(0)" aria-label="Toggle sidebar">
+                <i class="ti ti-menu-2 fs-7"></i>
+              </a>
+              <div class="workspace-page-copy">
+                <div id="page-title-label" class="portal-mini-title">Group workspace</div>
+                <h1 id="page-title-heading">Join Requests</h1>
+              </div>
+            </div>
+            <div id="workspace-user-menu" class="ms-auto"></div>
+          </div>
+        </nav>
+      </header>
+
+      <div class="container-fluid py-4">
+        <section class="dashboard-panel card workspace-legacy-card">
+          <div class="card-body">
+            <div class="workspace-legacy-intro">
+              <div>
+                <h2>Review Membership Requests</h2>
+                <p>Approve or reject incoming requests for the current group workspace.</p>
+              </div>
+              <div class="btn-row">
+                <button id="back-to-groups" class="btn btn-secondary" type="button">Back to groups</button>
+                <button id="refresh-page" class="btn btn-secondary" type="button">Refresh</button>
+              </div>
+            </div>
+
+            <div id="admin-error" class="alert error" hidden></div>
+            <div id="admin-success" class="alert success" hidden></div>
+            <div id="admin-info" class="alert info" hidden></div>
+
+            <div class="workspace-form-grid cols-2">
+              <div class="field">
+                <label for="admin_group_id">Group ID to review</label>
+                <input id="admin_group_id" type="number" min="1" placeholder="Enter group id" />
+                <div class="helper-text">This is filled automatically when you open review from a group workspace.</div>
+              </div>
+
+              <div class="field">
+                <label for="status_filter">Filter by status</label>
+                <select id="status_filter">
+                  <option value="">All</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="btn-row mt-3">
+              <button id="load-group-requests-btn" class="btn" type="button">Load Requests</button>
+            </div>
+
+            <div class="muted-box mt-3">
+              Approving a request adds the user into group members as <strong>member</strong>.
+            </div>
+
+            <div id="group-request-list" class="request-list mt-3"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="../assets/libs/jquery/dist/jquery.min.js"></script>
+  <script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/js/app.min.js"></script>
+  <script src="../assets/js/sidebarmenu.js"></script>
+  <script src="../js/app.js" defer></script>
+  <script src="../modules/join_request/join_request_api.js" defer></script>
+  <script src="../modules/join_request/join_request.js" defer></script>
 </body>
 </html>

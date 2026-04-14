@@ -4,110 +4,208 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="api-base" content="http://localhost:8000" />
-  <title>Group Settings • Hagbad</title>
+  <title>Group Settings | Hagbad</title>
+  <link rel="shortcut icon" type="image/png" href="../assets/images/logos/favicon.png" />
+  <link rel="stylesheet" href="../assets/css/styles.min.css" />
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/portal.css" />
 </head>
 
-<body data-page="group_settings" data-root="false">
-  <div id="app-header"></div>
+<body data-page="group_settings" data-root="false" class="portal-body dashboard-body">
+  <div class="page-wrapper" id="main-wrapper" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+    data-sidebar-position="fixed" data-header-position="fixed">
+    <aside class="left-sidebar">
+      <div>
+        <div class="brand-logo d-flex align-items-center justify-content-between">
+          <a id="group-brand-link" href="dashboard.html" class="dashboard-brand">
+            <span class="dashboard-brand-icon-wrap">
+              <img src="../assets/images/logos/favicon.png" alt="Hagbad icon" class="dashboard-brand-icon" />
+            </span>
+            <span class="portal-brand-copy">
+              <span class="portal-brand-name">Hagbad</span>
+              <span class="portal-brand-subtitle">Group workspace</span>
+            </span>
+          </a>
+          <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
+            <i class="ti ti-x fs-6"></i>
+          </div>
+        </div>
 
-  <main class="container" aria-labelledby="page-title">
-    <div class="hero">
-      <h1 id="page-title">Group settings</h1>
-      <p>View or manage contribution rules for a group.</p>
+        <nav class="sidebar-nav scroll-sidebar" aria-label="Sidebar">
+          <ul id="sidebarnav">
+            <li class="nav-small-cap"><span class="hide-menu">Main</span></li>
+            <li class="sidebar-item">
+              <a id="group-nav-dashboard" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-layout-dashboard"></i>
+                <span class="hide-menu">Dashboard</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-cycles" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-refresh"></i>
+                <span class="hide-menu">My Cycles</span>
+              </a>
+            </li>
+            <li class="nav-small-cap"><span class="hide-menu">Sections</span></li>
+            <li class="sidebar-item">
+              <a id="group-nav-settings" class="sidebar-link primary-hover-bg active" href="#" aria-expanded="false">
+                <i class="ti ti-adjustments-horizontal"></i>
+                <span class="hide-menu">Settings</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-members" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-users"></i>
+                <span class="hide-menu">Members</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-requests" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-user-question"></i>
+                <span class="hide-menu">Join Requests</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-invites" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-ticket"></i>
+                <span class="hide-menu">Invite</span>
+              </a>
+            </li>
+            <li id="group-admin-cap" class="nav-small-cap" hidden><span class="hide-menu">Admin</span></li>
+            <li id="group-nav-update-item" class="sidebar-item" hidden>
+              <a id="group-nav-update" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-edit"></i>
+                <span class="hide-menu">Update Group</span>
+              </a>
+            </li>
+            <li id="group-nav-add-cycle-item" class="sidebar-item" hidden>
+              <a id="group-nav-add-cycle" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-plus"></i>
+                <span class="hide-menu">Add New Cycle</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </aside>
+
+    <div class="body-wrapper">
+      <header class="app-header">
+        <nav class="navbar navbar-expand-lg navbar-light dashboard-topbar">
+          <div class="container-fluid p-0">
+            <div class="d-flex align-items-center gap-3">
+              <a class="nav-link d-xl-none p-0 sidebartoggler" href="javascript:void(0)" aria-label="Toggle sidebar">
+                <i class="ti ti-menu-2 fs-7"></i>
+              </a>
+              <div class="workspace-page-copy">
+                <div id="page-title-label" class="portal-mini-title">Group workspace</div>
+                <h1 id="page-title-heading">Settings</h1>
+              </div>
+            </div>
+            <div id="workspace-user-menu" class="ms-auto"></div>
+          </div>
+        </nav>
+      </header>
+
+      <div class="container-fluid py-4">
+        <div class="workspace-legacy-stack">
+          <section class="dashboard-panel card">
+            <div class="card-body">
+              <div class="workspace-legacy-intro">
+                <div>
+                  <h2 id="group-name">Group settings</h2>
+                  <p>View or manage contribution rules, late-payment behavior, and cycle defaults for this group.</p>
+                </div>
+                <span id="perm-note" class="status-chip status-loading">Checking permissions</span>
+              </div>
+
+              <div class="toolbar" aria-label="Group settings controls">
+                <div class="toolbar-left input-row">
+                  <input id="group_id" type="number" min="1" step="1" placeholder="Group ID" aria-label="Group ID" />
+                  <button id="load" class="btn btn-secondary" type="button">Load</button>
+                </div>
+                <div class="toolbar-right">
+                  <button id="open-detail" class="btn btn-secondary" type="button">Open detail</button>
+                  <button id="edit-btn" class="btn" type="button">Edit / Create</button>
+                </div>
+              </div>
+
+              <p id="select-error" class="error" role="alert"></p>
+              <div id="page-error" class="form-error" role="alert" hidden></div>
+
+              <div id="settings-view" hidden>
+                <dl id="settings-grid" class="profile-grid"></dl>
+              </div>
+
+              <form id="settings-form" novalidate hidden>
+                <div id="form-error" class="form-error" role="alert" hidden></div>
+                <div id="form-success" class="form-success" role="status" hidden></div>
+
+                <div class="workspace-form-grid cols-2">
+                  <div class="field">
+                    <label for="contribution_amount">Contribution amount</label>
+                    <input id="contribution_amount" type="number" min="0.01" step="0.01" required
+                      placeholder="e.g. 20.00" aria-describedby="contribution_amount-error" />
+                    <p id="contribution_amount-error" class="error" role="alert"></p>
+                  </div>
+
+                  <div class="field">
+                    <label for="frequency">Frequency</label>
+                    <select id="frequency" class="select">
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="custom_days">Custom days</option>
+                    </select>
+                  </div>
+
+                  <div class="field" id="custom-days-wrap" hidden>
+                    <label for="custom_days">Custom days</label>
+                    <input id="custom_days" type="number" min="1" step="1" placeholder="e.g. 10"
+                      aria-describedby="custom_days-error" />
+                    <p id="custom_days-error" class="error" role="alert"></p>
+                  </div>
+
+                  <div class="field">
+                    <label class="check">
+                      <input id="allow_late" type="checkbox" />
+                      <span>Allow late payments</span>
+                    </label>
+                  </div>
+
+                  <div class="field" id="late-penalty-wrap" hidden>
+                    <label for="late_penalty">Late penalty</label>
+                    <input id="late_penalty" type="number" min="0" step="0.01" placeholder="e.g. 2.00"
+                      aria-describedby="late_penalty-error" />
+                    <p id="late_penalty-error" class="error" role="alert"></p>
+                  </div>
+
+                  <div class="field">
+                    <label class="check">
+                      <input id="auto_start_cycle" type="checkbox" />
+                      <span>Auto-start cycle</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="modal-actions">
+                  <button id="save" class="btn" type="submit">Save</button>
+                  <button id="cancel" class="btn btn-secondary" type="button">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
-
-    <section class="card" aria-label="Group picker">
-      <div class="card-header">
-        <h2>Select a group</h2>
-        <p>Open with <code>?group_id=1</code> (or <code>?id=1</code>).</p>
-      </div>
-      <div class="card-body">
-        <div class="input-row">
-          <input id="group_id" type="number" min="1" step="1" placeholder="Group ID" aria-label="Group ID" />
-          <button id="load" class="icon-btn" type="button">Load</button>
-        </div>
-        <p id="select-error" class="error" role="alert"></p>
-      </div>
-    </section>
-
-    <section class="card" aria-label="Settings" style="margin-top:16px;">
-      <div class="card-header">
-        <h2 id="group-name">—</h2>
-        <p id="perm-note" class="hint" aria-live="polite"></p>
-      </div>
-
-      <div class="card-body">
-        <div id="page-error" class="form-error" role="alert" hidden></div>
-
-        <div id="settings-view" hidden>
-          <dl id="settings-grid" class="profile-grid"></dl>
-          <div class="split" style="margin-top:16px;">
-            <button id="open-detail" class="btn btn-secondary" type="button">Open detail</button>
-            <button id="edit-btn" class="btn" type="button">Edit / Create</button>
-          </div>
-        </div>
-
-        <form id="settings-form" novalidate hidden>
-          <div id="form-error" class="form-error" role="alert" hidden></div>
-          <div id="form-success" class="form-success" role="status" hidden></div>
-
-          <div class="field">
-            <label for="contribution_amount">Contribution amount</label>
-            <input id="contribution_amount" type="number" min="0.01" step="0.01" required
-                   placeholder="e.g. 20.00" aria-describedby="contribution_amount-error" />
-            <p id="contribution_amount-error" class="error" role="alert"></p>
-          </div>
-
-          <div class="field">
-            <label for="frequency">Frequency</label>
-            <select id="frequency" class="select">
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="custom_days">Custom days</option>
-            </select>
-          </div>
-
-          <div class="field" id="custom-days-wrap" hidden>
-            <label for="custom_days">Custom days</label>
-            <input id="custom_days" type="number" min="1" step="1" placeholder="e.g. 10"
-                   aria-describedby="custom_days-error" />
-            <p id="custom_days-error" class="error" role="alert"></p>
-          </div>
-
-          <div class="field">
-            <label class="check">
-              <input id="allow_late" type="checkbox" />
-              <span>Allow late payments</span>
-            </label>
-          </div>
-
-          <div class="field" id="late-penalty-wrap" hidden>
-            <label for="late_penalty">Late penalty</label>
-            <input id="late_penalty" type="number" min="0" step="0.01" placeholder="e.g. 2.00"
-                   aria-describedby="late_penalty-error" />
-            <p id="late_penalty-error" class="error" role="alert"></p>
-          </div>
-
-          <div class="field">
-            <label class="check">
-              <input id="auto_start_cycle" type="checkbox" />
-              <span>Auto-start cycle</span>
-            </label>
-          </div>
-
-          <div class="split">
-            <button id="save" class="btn" type="submit">Save</button>
-            <button id="cancel" class="btn btn-secondary" type="button">Cancel</button>
-          </div>
-        </form>
-      </div>
-    </section>
-  </main>
+  </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
+  <script src="../assets/libs/jquery/dist/jquery.min.js"></script>
+  <script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/js/app.min.js"></script>
+  <script src="../assets/js/sidebarmenu.js"></script>
   <script src="../js/app.js" defer></script>
   <script src="../modules/user/user_api.js" defer></script>
   <script src="../modules/group_settings/group_settings_api.js" defer></script>

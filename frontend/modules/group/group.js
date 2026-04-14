@@ -681,7 +681,7 @@
   async function initGroupDetailPage() {
     if (!window.APP.requireAuthOrRedirect()) return;
 
-    const id = getGroupIdFromUrl();
+    const id = Number(getGroupIdFromUrl() || 0);
     const mode = getGroupModeFromUrl();
     if (!id) {
       window.APP.showToast("Missing group id", "error");
@@ -690,73 +690,264 @@
 
     const profile = await ensureProfile();
     if (!profile) return;
+    mountWorkspaceMenu(profile);
 
     const group = await window.GroupAPI.getGroup(id);
-
-    qs("#open-members").addEventListener("click", () => {
-      window.APP.navigate(`group_members.html?group_id=${id}`);
-    });
-    qs("#open-settings").addEventListener("click", () => {
-      window.APP.navigate(`group_settings.html?group_id=${id}`);
-    });
-    qs("#open-review").addEventListener("click", () => {
-      window.APP.navigate(`join_requests.html?group_id=${id}`);
-    });
-    qs("#open-cycles").addEventListener("click", () => {
-      window.APP.navigate(`cycles.html?group_id=${id}`);
-    });
-
     const isEditMode = mode === "edit";
-
-    text(qs("#page-title"), isEditMode ? "Edit group" : "Group details");
-    text(qs("#subtitle"), isEditMode ? "Update this group." : "View this group.");
-    text(qs("#g-name"), group.name);
-
-    const statusBadge = qs("#g-status");
-    statusBadge.textContent = group.status;
-    statusBadge.className = `badge ${group.status === "closed" ? "bad" : "good"}`;
-
-    const privacyBadge = qs("#g-privacy");
-    privacyBadge.textContent = group.privacy;
-    privacyBadge.className = `badge ${group.privacy === "private" ? "warn" : ""}`;
-
-    const grid = qs("#g-grid");
-    grid.innerHTML = "";
-    [
-      ["ID", group.id],
-      ["Creator ID", group.created_by],
-      ["Privacy", capitalize(group.privacy)],
-      ["Visible", group.visible ? "Yes" : "No"],
-      ["Status", capitalize(group.status)],
-      ["Created", group.created_at ? new Date(group.created_at).toLocaleString() : "-"],
-      ["Description", group.description || "-"],
-    ].forEach(([k, v]) => {
-      const dt = document.createElement("dt");
-      dt.textContent = k;
-      const dd = document.createElement("dd");
-      dd.textContent = String(v);
-      grid.appendChild(dt);
-      grid.appendChild(dd);
-    });
-
     const isCreator = Number(group.created_by) === Number(profile.id);
-    const note = qs("#creator-note");
+
+    function setHref(selector, href) {
+      const el = qs(selector);
+      if (el) el.href = href;
+    }
+
+    function setSummaryValue(selector, value) {
+      text(qs(selector), value);
+    }
+
+    function createContextBadge(label, tone) {
+      return createBadge(label, tone);
+    }
+
+    function applyGroupSurface(currentGroup) {
+      const hero = qs("#group-hero");
+      const heroAvatar = qs("#group-hero-avatar");
+      const snapshotImage = qs("#group-snapshot-image");
+      const coverUrl = getGroupCoverUrl(currentGroup);
+      const groupImageUrl = getGroupImageUrl(currentGroup);
+
+      if (hero) {
+        hero.style.backgroundImage = coverUrl
+          ? `linear-gradient(120deg, rgba(8, 24, 48, 0.72), rgba(11, 69, 157, 0.68)), url("${coverUrl}")`
+          : "";
+      }
+
+      [heroAvatar, snapshotImage].forEach((img) => {
+        if (!img) return;
+        img.src = groupImageUrl;
+        img.onerror = () => {
+          img.onerror = null;
+          img.src = getDefaultGroupImage();
+        };
+      });
+    }
+
+    function renderOverview(currentGroup, membershipRole = null) {
+      document.title = `${currentGroup.name} | Group Workspace | Hagbad`;
+      text(qs("#g-name"), currentGroup.name);
+      text(qs("#page-title"), isEditMode ? "Edit Group" : "Dashboard");
+      text(
+        qs("#subtitle"),
+        isEditMode
+          ? "Update the group details and workspace media."
+          : currentGroup.description || "View the live summary and management sections for this group."
+      );
+      text(qs("#group-description-copy"), currentGroup.description || "No description has been added for this group yet.");
+      text(qs("#group-snapshot-name"), currentGroup.name);
+      text(
+        qs("#group-snapshot-meta"),
+        `${capitalize(currentGroup.privacy)} group • ${currentGroup.visible ? "Visible" : "Hidden"} • ${capitalize(currentGroup.status)}`
+      );
+
+      const badges = qs("#group-context-badges");
+      if (badges) {
+        badges.innerHTML = "";
+        badges.appendChild(createContextBadge(capitalize(currentGroup.privacy), currentGroup.privacy === "private" ? "private" : "public"));
+        badges.appendChild(createContextBadge(currentGroup.visible ? "Visible" : "Hidden", currentGroup.visible ? "visible" : "hidden"));
+        badges.appendChild(createContextBadge(capitalize(currentGroup.status), currentGroup.status === "closed" ? "closed" : "active"));
+        if (membershipRole) {
+          badges.appendChild(createContextBadge(`Role: ${capitalize(membershipRole)}`, membershipRole === "admin" ? "visible" : "public"));
+        } else if (!isCreator) {
+          badges.appendChild(createContextBadge("Viewer", "hidden"));
+        }
+      }
+
+      const grid = qs("#g-grid");
+      if (grid) {
+        grid.innerHTML = "";
+        [
+          ["Group ID", currentGroup.id],
+          ["Creator ID", currentGroup.created_by],
+          ["Privacy", capitalize(currentGroup.privacy)],
+          ["Visible in explore", currentGroup.visible ? "Yes" : "No"],
+          ["Status", capitalize(currentGroup.status)],
+          ["Created", currentGroup.created_at ? new Date(currentGroup.created_at).toLocaleString() : "-"],
+          ["Description", currentGroup.description || "-"],
+        ].forEach(([k, v]) => {
+          const dt = document.createElement("dt");
+          dt.textContent = k;
+          const dd = document.createElement("dd");
+          dd.textContent = String(v);
+          grid.appendChild(dt);
+          grid.appendChild(dd);
+        });
+      }
+
+      const roleChip = qs("#group-role-note");
+      if (roleChip) {
+        if (isCreator) {
+          roleChip.className = "status-chip status-ok";
+          roleChip.textContent = "Creator access";
+        } else if (membershipRole === "admin") {
+          roleChip.className = "status-chip status-ok";
+          roleChip.textContent = "Admin access";
+        } else if (membershipRole === "moderator") {
+          roleChip.className = "status-chip status-ok";
+          roleChip.textContent = "Moderator access";
+        } else if (membershipRole === "member") {
+          roleChip.className = "status-chip status-loading";
+          roleChip.textContent = "Member access";
+        } else {
+          roleChip.className = "status-chip status-down";
+          roleChip.textContent = "Viewer access";
+        }
+      }
+
+      const note = qs("#creator-note");
+      if (note) {
+        if (isCreator) {
+          text(note, isEditMode
+            ? "You are editing this group as the creator."
+            : "You are the creator of this group. Use edit mode when you need to update the group or close it.");
+        } else if (membershipRole) {
+          text(note, `You belong to this group as ${membershipRole}. Some management pages may still require creator or admin access.`);
+        } else {
+          text(note, "You can view this group, but member-only management pages may remain restricted.");
+        }
+      }
+
+      applyGroupSurface(currentGroup);
+    }
+
+    async function loadSummary() {
+      let members = [];
+      let cycles = [];
+      let membershipRole = null;
+      let totalPayments = 0;
+      let totalPayouts = 0;
+      let pendingJoinRequests = null;
+      let activeInviteCount = null;
+
+      try {
+        members = await window.GroupMemberAPI.listMembers({ group_id: id, page: 1, size: 100 });
+        const me = members.find((item) => Number(item.user_id) === Number(profile.id));
+        membershipRole = me ? me.role : null;
+      } catch {
+        members = [];
+      }
+
+      try {
+        cycles = await window.CycleAPI.listForGroup(id, { page: 1, size: 100 });
+      } catch {
+        cycles = [];
+      }
+
+      if (cycles.length) {
+        const paymentSummaries = await Promise.all(
+          cycles.map(async (cycle) => {
+            try {
+              return await window.PaymentAPI.getSummary(cycle.id);
+            } catch {
+              return null;
+            }
+          })
+        );
+
+        const payoutSummaries = await Promise.all(
+          cycles.map(async (cycle) => {
+            try {
+              return await window.PayoutAPI.getSummary(cycle.id);
+            } catch {
+              return null;
+            }
+          })
+        );
+
+        totalPayments = paymentSummaries.reduce((sum, item) => {
+          if (!item) return sum;
+          return sum + Number(item.due_count || 0) + Number(item.paid_count || 0) + Number(item.late_count || 0);
+        }, 0);
+
+        totalPayouts = payoutSummaries.reduce((sum, item) => {
+          if (!item) return sum;
+          return sum
+            + Number(item.pending_count || 0)
+            + Number(item.approved_count || 0)
+            + Number(item.rejected_count || 0)
+            + Number(item.paid_count || 0);
+        }, 0);
+      }
+
+      try {
+        const pendingItems = await window.JoinRequestAPI.listGroupJoinRequests(id, "pending");
+        pendingJoinRequests = pendingItems.length;
+      } catch (err) {
+        pendingJoinRequests = err && err.status === 403 ? null : 0;
+      }
+
+      try {
+        const invites = await window.InviteAPI.listInvites(id);
+        activeInviteCount = invites.filter((invite) => {
+          if (invite.used) return false;
+          if (!invite.expires_at) return true;
+          const dt = new Date(invite.expires_at);
+          return Number.isFinite(dt.getTime()) && dt.getTime() > Date.now();
+        }).length;
+      } catch (err) {
+        activeInviteCount = err && err.status === 403 ? null : 0;
+      }
+
+      const activeCycles = cycles.filter((cycle) => cycle.status === "active");
+      const canCreateCycle = isCreator || membershipRole === "admin";
+      const workspaceLinks = window.APP.applyGroupWorkspaceNav({
+        groupId: id,
+        activeKey: isEditMode ? "update" : "dashboard",
+        pageTitle: isEditMode ? "Update Group" : "Dashboard",
+        canUpdateGroup: isCreator,
+        canCreateCycle,
+      }) || {};
+
+      setHref("#quick-settings", workspaceLinks.settings || `group_settings.html?group_id=${id}`);
+      setHref("#quick-members", workspaceLinks.members || `group_members.html?group_id=${id}`);
+      setHref("#quick-requests", workspaceLinks.requests || `group_review.html?group_id=${id}`);
+      setHref("#quick-invites", workspaceLinks.invites || `invites.html?group_id=${id}`);
+      setHref("#open-cycles", workspaceLinks.cycles || `cycles.html?group_id=${id}`);
+
+      setSummaryValue("#summary-active-cycles", String(activeCycles.length));
+      setSummaryValue("#summary-total-members", members.length ? String(members.length) : (isCreator ? "1" : "-"));
+      setSummaryValue("#summary-total-payments", String(totalPayments));
+      setSummaryValue("#summary-total-payouts", String(totalPayouts));
+      setSummaryValue("#summary-join-requests", pendingJoinRequests === null ? "Locked" : String(pendingJoinRequests));
+      setSummaryValue("#summary-invites", activeInviteCount === null ? "Locked" : String(activeInviteCount));
+
+      renderOverview(group, membershipRole);
+    }
+
+    setHref("#back-to-groups", "my_groups.html");
+    setHref("#exit-edit-mode", `group_detail.html?id=${id}`);
+
     const editArea = qs("#edit-area");
+    const editModeLink = qs("#open-edit-mode");
+    if (editModeLink) {
+      editModeLink.hidden = !isCreator;
+      editModeLink.href = `group_detail.html?id=${id}&mode=edit`;
+    }
+
+    await loadSummary();
 
     if (!isCreator) {
-      text(note, "Only the creator can edit or close this group.");
-      editArea.hidden = true;
+      if (editArea) editArea.hidden = true;
       return;
     }
 
     text(
-      note,
+      qs("#creator-note"),
       isEditMode
-        ? "You are editing this group."
-        : "You are the creator. Open this page in edit mode when you need to change the group details."
+        ? "You are editing this group as the creator."
+        : "You are the creator of this group. Open edit mode when you need to update the group or close it."
     );
-    editArea.hidden = !isEditMode;
 
+    if (editArea) editArea.hidden = !isEditMode;
     if (!isEditMode) return;
 
     const nameInput = qs("#name");
@@ -801,9 +992,7 @@
         const updated = await window.GroupAPI.updateGroup(id, payload);
         setFormSuccess("Saved.");
         window.APP.showToast("Group updated", "success");
-        text(qs("#g-name"), updated.name);
-        qs("#g-status").textContent = updated.status;
-        qs("#g-privacy").textContent = updated.privacy;
+        renderOverview(updated, "admin");
       } catch (err) {
         setFormError(err.message || "Update failed.");
         window.APP.showToast(err.message || "Update failed.", "error");
@@ -819,8 +1008,7 @@
       try {
         const updated = await window.GroupAPI.closeGroup(id);
         window.APP.showToast("Group closed", "success");
-        qs("#g-status").textContent = updated.status;
-        qs("#g-status").className = "badge bad";
+        renderOverview(updated, "admin");
       } catch (err) {
         window.APP.showToast(err.message || "Close failed.", "error");
       } finally {

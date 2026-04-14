@@ -1,113 +1,358 @@
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="api-base" content="http://localhost:8000" />
-  <title>Group • Hagbad</title>
-  <link rel="stylesheet" href="../css/style.css" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="api-base" content="http://localhost:8000" />
+    <title>Group Workspace | Hagbad</title>
+    <link rel="shortcut icon" type="image/png" href="../assets/images/logos/favicon.png" />
+    <link rel="stylesheet" href="../assets/css/styles.min.css" />
+    <link rel="stylesheet" href="../css/portal.css" />
 </head>
 
-<body data-page="group_detail" data-root="false">
-  <div id="app-header"></div>
+<body data-page="group_detail" data-root="false" class="portal-body dashboard-body">
+    <div class="page-wrapper" id="main-wrapper" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+        data-sidebar-position="fixed" data-header-position="fixed">
+        <aside class="left-sidebar">
+            <div>
+                <div class="brand-logo d-flex align-items-center justify-content-between">
+                    <a id="group-brand-link" href="dashboard.html" class="dashboard-brand">
+                        <span class="dashboard-brand-icon-wrap">
+                            <img src="../assets/images/logos/favicon.png" alt="Hagbad icon" class="dashboard-brand-icon" />
+                        </span>
+                        <span class="portal-brand-copy">
+                            <span class="portal-brand-name">Hagbad</span>
+                            <span class="portal-brand-subtitle">Group workspace</span>
+                        </span>
+                    </a>
+                    <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
+                        <i class="ti ti-x fs-6"></i>
+                    </div>
+                </div>
 
-  <main class="container" aria-labelledby="page-title">
-    <div class="hero">
-      <h1 id="page-title">Group</h1>
-      <p id="subtitle">Loading…</p>
+                <nav class="sidebar-nav scroll-sidebar" aria-label="Sidebar">
+                    <ul id="sidebarnav">
+                        <li class="nav-small-cap">
+                            <span class="hide-menu">Main</span>
+                        </li>
+                        <li class="sidebar-item">
+                            <a id="group-nav-dashboard" class="sidebar-link primary-hover-bg active" href="#" aria-expanded="false">
+                                <i class="ti ti-layout-dashboard"></i>
+                                <span class="hide-menu">Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a id="group-nav-cycles" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                                <i class="ti ti-refresh"></i>
+                                <span class="hide-menu">My Cycles</span>
+                            </a>
+                        </li>
+                        <li class="nav-small-cap">
+                            <span class="hide-menu">Sections</span>
+                        </li>
+                        <li class="sidebar-item">
+                            <a id="group-nav-settings" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                                <i class="ti ti-adjustments-horizontal"></i>
+                                <span class="hide-menu">Settings</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a id="group-nav-members" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                                <i class="ti ti-users"></i>
+                                <span class="hide-menu">Members</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a id="group-nav-requests" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                                <i class="ti ti-user-question"></i>
+                                <span class="hide-menu">Join Requests</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a id="group-nav-invites" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                                <i class="ti ti-ticket"></i>
+                                <span class="hide-menu">Invite</span>
+                            </a>
+                        </li>
+                        <li id="group-admin-cap" class="nav-small-cap" hidden>
+                            <span class="hide-menu">Admin</span>
+                        </li>
+                        <li id="group-nav-update-item" class="sidebar-item" hidden>
+                            <a id="group-nav-update" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                                <i class="ti ti-edit"></i>
+                                <span class="hide-menu">Update Group</span>
+                            </a>
+                        </li>
+                        <li id="group-nav-add-cycle-item" class="sidebar-item" hidden>
+                            <a id="group-nav-add-cycle" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                                <i class="ti ti-plus"></i>
+                                <span class="hide-menu">Add New Cycle</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <div class="body-wrapper">
+            <header class="app-header">
+                <nav class="navbar navbar-expand-lg navbar-light dashboard-topbar">
+                    <div class="container-fluid p-0">
+                        <div class="d-flex align-items-center gap-3">
+                            <a class="nav-link d-xl-none p-0 sidebartoggler" href="javascript:void(0)" aria-label="Toggle sidebar">
+                                <i class="ti ti-menu-2 fs-7"></i>
+                            </a>
+                            <div class="workspace-page-copy">
+                                <div id="page-title-label" class="portal-mini-title">Group workspace</div>
+                                <h1 id="page-title">Dashboard</h1>
+                            </div>
+                        </div>
+
+                        <div id="workspace-user-menu" class="ms-auto"></div>
+                    </div>
+                </nav>
+            </header>
+
+            <div class="container-fluid py-4">
+                <section id="group-hero" class="dashboard-hero group-workspace-hero">
+                    <div class="group-hero-top">
+                        <div class="group-hero-copy">
+                            <span class="eyebrow text-white mb-3">Group dashboard</span>
+                            <h2 id="g-name">Loading group...</h2>
+                            <p id="subtitle">Preparing your group workspace summary.</p>
+                            <div id="group-context-badges" class="group-context-badges"></div>
+                        </div>
+
+                        <div class="group-hero-aside">
+                            <img id="group-hero-avatar" class="group-hero-avatar"
+                                src="../assets/images/logos/favicon.png" alt="Group image" />
+                            <div class="group-hero-actions">
+                                <a id="open-edit-mode" class="btn portal-btn-secondary" href="#" hidden>Edit group</a>
+                                <a id="back-to-groups" class="btn portal-btn-secondary" href="my_groups.html">Back to groups</a>
+                                <a id="open-cycles" class="btn portal-btn-secondary" href="#">My Cycles</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-summary-grid group-summary-grid">
+                        <div class="dashboard-summary-card">
+                            <span>Active cycles</span>
+                            <strong id="summary-active-cycles">-</strong>
+                        </div>
+                        <div class="dashboard-summary-card">
+                            <span>Total members</span>
+                            <strong id="summary-total-members">-</strong>
+                        </div>
+                        <div class="dashboard-summary-card">
+                            <span>Payments</span>
+                            <strong id="summary-total-payments">-</strong>
+                        </div>
+                        <div class="dashboard-summary-card">
+                            <span>Payouts</span>
+                            <strong id="summary-total-payouts">-</strong>
+                        </div>
+                        <div class="dashboard-summary-card">
+                            <span>Pending join requests</span>
+                            <strong id="summary-join-requests">-</strong>
+                        </div>
+                        <div class="dashboard-summary-card">
+                            <span>Invites</span>
+                            <strong id="summary-invites">-</strong>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="row g-4 mt-1">
+                    <div class="col-xl-8">
+                        <section class="dashboard-panel card h-100" aria-label="Group overview">
+                            <div class="card-body">
+                                <div class="dashboard-panel-title">
+                                    <div>
+                                        <h3>Group Overview</h3>
+                                        <p id="group-description-copy">Loading group details.</p>
+                                    </div>
+                                    <span id="group-role-note" class="status-chip status-loading">Checking access</span>
+                                </div>
+
+                                <dl id="g-grid" class="profile-grid"></dl>
+
+                                <p id="creator-note" class="dashboard-note mt-4 mb-0" aria-live="polite"></p>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="col-xl-4">
+                        <section class="dashboard-panel card mb-4" aria-label="Group quick links">
+                            <div class="card-body">
+                                <div class="dashboard-panel-title">
+                                    <div>
+                                        <h3>Group Sections</h3>
+                                        <p>Move into the pages used to manage this specific group.</p>
+                                    </div>
+                                </div>
+
+                                <div class="quick-links">
+                                    <a id="quick-settings" class="quick-link-card" href="#">
+                                        <span class="link-copy">
+                                            <i class="ti ti-adjustments-horizontal"></i>
+                                            <span>
+                                                <strong>Settings</strong>
+                                                <span>Contribution rules, frequency, and automation.</span>
+                                            </span>
+                                        </span>
+                                        <i class="ti ti-arrow-right"></i>
+                                    </a>
+
+                                    <a id="quick-members" class="quick-link-card" href="#">
+                                        <span class="link-copy">
+                                            <i class="ti ti-users"></i>
+                                            <span>
+                                                <strong>Members</strong>
+                                                <span>Review current members and manage roles.</span>
+                                            </span>
+                                        </span>
+                                        <i class="ti ti-arrow-right"></i>
+                                    </a>
+
+                                    <a id="quick-requests" class="quick-link-card" href="#">
+                                        <span class="link-copy">
+                                            <i class="ti ti-user-question"></i>
+                                            <span>
+                                                <strong>Join Requests</strong>
+                                                <span>Approve or reject membership requests for this group.</span>
+                                            </span>
+                                        </span>
+                                        <i class="ti ti-arrow-right"></i>
+                                    </a>
+
+                                    <a id="quick-invites" class="quick-link-card" href="#">
+                                        <span class="link-copy">
+                                            <i class="ti ti-ticket"></i>
+                                            <span>
+                                                <strong>Invite</strong>
+                                                <span>Create invite codes and redeem access flows.</span>
+                                            </span>
+                                        </span>
+                                        <i class="ti ti-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="dashboard-panel card" aria-label="Group media and status">
+                            <div class="card-body">
+                                <div class="dashboard-panel-title">
+                                    <div>
+                                        <h3>Group Snapshot</h3>
+                                        <p>Current visibility, privacy, and media at a glance.</p>
+                                    </div>
+                                </div>
+
+                                <div class="group-snapshot-panel">
+                                    <img id="group-snapshot-image" class="group-snapshot-image"
+                                        src="../assets/images/logos/favicon.png" alt="Group image preview" />
+                                    <div class="group-snapshot-copy">
+                                        <strong id="group-snapshot-name">Loading...</strong>
+                                        <span id="group-snapshot-meta">Preparing group summary.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <section id="edit-area" class="dashboard-panel card mt-4" hidden aria-label="Edit group">
+                    <div class="card-body">
+                        <div class="dashboard-panel-title">
+                            <div>
+                                <h3>Edit Group</h3>
+                                <p>Update the group details, visibility, and media from the dashboard.</p>
+                            </div>
+                            <a id="exit-edit-mode" class="btn portal-btn-secondary" href="#">Back to dashboard</a>
+                        </div>
+
+                        <form id="edit-form" novalidate>
+                            <div id="form-error" class="form-error" role="alert" hidden></div>
+                            <div id="form-success" class="form-success" role="status" hidden></div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="name" class="form-label">Group name</label>
+                                    <input id="name" class="form-control portal-input" type="text" maxlength="120"
+                                        aria-describedby="name-error" />
+                                    <p id="name-error" class="field-error" role="alert"></p>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label for="privacy" class="form-label">Privacy</label>
+                                    <select id="privacy" class="form-select portal-input">
+                                        <option value="public">Public</option>
+                                        <option value="private">Private</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label d-block">Visibility</label>
+                                    <div class="group-toggle-card compact">
+                                        <div class="form-check form-switch m-0">
+                                            <input id="visible" class="form-check-input" type="checkbox" />
+                                            <label for="visible" class="form-check-label">Visible</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label for="description" class="form-label">Description</label>
+                                    <textarea id="description" class="form-control portal-input" rows="4" maxlength="2000"></textarea>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="group_image" class="form-label">Group photo</label>
+                                    <input id="group_image" class="form-control portal-input" type="file"
+                                        accept=".jpg,.jpeg,.png,.webp,.gif,image/*" />
+                                    <div class="form-check mt-2">
+                                        <input id="remove_group_image" class="form-check-input" type="checkbox" />
+                                        <label for="remove_group_image" class="form-check-label">Remove current group photo</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="cover_image" class="form-label">Cover photo</label>
+                                    <input id="cover_image" class="form-control portal-input" type="file"
+                                        accept=".jpg,.jpeg,.png,.webp,.gif,image/*" />
+                                    <div class="form-check mt-2">
+                                        <input id="remove_cover_image" class="form-check-input" type="checkbox" />
+                                        <label for="remove_cover_image" class="form-check-label">Remove current cover photo</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="portal-modal-actions">
+                                <button id="save" class="btn portal-btn-primary" type="submit">Save changes</button>
+                                <button id="close" class="btn portal-btn-secondary" type="button">Close group</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </div>
     </div>
 
-    <section class="card" aria-label="Group details">
-      <div class="card-header">
-        <h2 id="g-name">—</h2>
-        <p>
-          <span id="g-status" class="badge">—</span>
-          <span id="g-privacy" class="badge">—</span>
-        </p>
-      </div>
+    <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
-      <div class="card-body">
-        <dl class="profile-grid" id="g-grid"></dl>
-
-        <div id="creator-note" class="hint" aria-live="polite"></div>
-
-        <div class="split" style="margin-top:16px; flex-wrap:wrap;">
-          <button id="open-members" class="btn btn-secondary" type="button">Group members</button>
-          <button id="open-settings" class="btn btn-secondary" type="button">Group settings</button>
-          <button id="open-review" class="btn btn-secondary" type="button">Group review</button>
-          <button id="open-cycles" class="btn btn-secondary" type="button">Cycles</button>
-        </div>
-
-        <div id="edit-area" hidden>
-          <h3 style="margin:14px 0 6px;">Edit group</h3>
-          <form id="edit-form" novalidate>
-            <div id="form-error" class="form-error" role="alert" hidden></div>
-            <div id="form-success" class="form-success" role="status" hidden></div>
-
-            <div class="field">
-              <label for="name">Name</label>
-              <input id="name" type="text" maxlength="120" aria-describedby="name-error" />
-              <p id="name-error" class="error" role="alert"></p>
-            </div>
-
-            <div class="field">
-              <label for="privacy">Privacy</label>
-              <select id="privacy" class="select">
-                <option value="public">Public</option>
-                <option value="private">Private</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label class="check">
-                <input id="visible" type="checkbox" />
-                <span>Visible in public list</span>
-              </label>
-            </div>
-
-            <div class="field">
-              <label for="description">Description</label>
-              <textarea id="description" class="textarea" rows="3" maxlength="2000"></textarea>
-            </div>
-
-            <div class="field">
-              <label for="group_image">Group photo</label>
-              <input id="group_image" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/*" />
-              <label class="check" style="margin-top:8px;">
-                <input id="remove_group_image" type="checkbox" />
-                <span>Remove current group photo</span>
-              </label>
-            </div>
-
-            <div class="field">
-              <label for="cover_image">Cover photo</label>
-              <input id="cover_image" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/*" />
-              <label class="check" style="margin-top:8px;">
-                <input id="remove_cover_image" type="checkbox" />
-                <span>Remove current cover photo</span>
-              </label>
-            </div>
-
-            <div class="split">
-              <button id="save" class="btn" type="submit">Save changes</button>
-              <button id="close" class="btn btn-secondary" type="button">Close group</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="split" style="margin-top:16px;">
-          <button class="btn btn-secondary" type="button" onclick="APP.navigate('my_groups.html')">Back</button>
-          <button class="btn btn-secondary" type="button" onclick="APP.navigate('../index.html')">Home</button>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
-
-  <script src="../js/app.js?v=4" defer></script>
-  <script src="../modules/user/user_api.js?v=4" defer></script>
-  <script src="../modules/group/group_api.js?v=4" defer></script>
-  <script src="../modules/group/group.js?v=4" defer></script>
+    <script src="../assets/libs/jquery/dist/jquery.min.js"></script>
+    <script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/app.min.js"></script>
+    <script src="../assets/js/sidebarmenu.js"></script>
+    <script src="../js/app.js" defer></script>
+    <script src="../modules/user/user_api.js" defer></script>
+    <script src="../modules/group/group_api.js" defer></script>
+    <script src="../modules/group_member/group_member_api.js" defer></script>
+    <script src="../modules/cycle/cycle_api.js" defer></script>
+    <script src="../modules/payment/payment_api.js" defer></script>
+    <script src="../modules/payout/payout_api.js" defer></script>
+    <script src="../modules/join_request/join_request_api.js" defer></script>
+    <script src="../modules/invite/invite_api.js" defer></script>
+    <script src="../modules/group/group.js" defer></script>
 </body>
 </html>

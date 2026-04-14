@@ -4,86 +4,193 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="api-base" content="http://localhost:8000" />
-  <title>Cycles • Hagbad</title>
+  <title>My Cycles | Hagbad</title>
+  <link rel="shortcut icon" type="image/png" href="../assets/images/logos/favicon.png" />
+  <link rel="stylesheet" href="../assets/css/styles.min.css" />
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/portal.css" />
 </head>
 
-<body data-page="cycles" data-root="false">
-  <div id="app-header"></div>
+<body data-page="cycles" data-root="false" class="portal-body dashboard-body">
+  <div class="page-wrapper" id="main-wrapper" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+    data-sidebar-position="fixed" data-header-position="fixed">
+    <aside class="left-sidebar">
+      <div>
+        <div class="brand-logo d-flex align-items-center justify-content-between">
+          <a id="group-brand-link" href="dashboard.html" class="dashboard-brand">
+            <span class="dashboard-brand-icon-wrap">
+              <img src="../assets/images/logos/favicon.png" alt="Hagbad icon" class="dashboard-brand-icon" />
+            </span>
+            <span class="portal-brand-copy">
+              <span class="portal-brand-name">Hagbad</span>
+              <span class="portal-brand-subtitle">Group workspace</span>
+            </span>
+          </a>
+          <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
+            <i class="ti ti-x fs-6"></i>
+          </div>
+        </div>
 
-  <main class="container" aria-labelledby="page-title">
-    <div class="hero">
-      <h1 id="page-title">Cycles</h1>
-      <p id="group-subtitle">Manage cycle rounds for a group.</p>
+        <nav class="sidebar-nav scroll-sidebar" aria-label="Sidebar">
+          <ul id="sidebarnav">
+            <li class="nav-small-cap">
+              <span class="hide-menu">Main</span>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-dashboard" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-layout-dashboard"></i>
+                <span class="hide-menu">Dashboard</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-cycles" class="sidebar-link primary-hover-bg active" href="#" aria-expanded="false">
+                <i class="ti ti-refresh"></i>
+                <span class="hide-menu">My Cycles</span>
+              </a>
+            </li>
+            <li class="nav-small-cap">
+              <span class="hide-menu">Sections</span>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-settings" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-adjustments-horizontal"></i>
+                <span class="hide-menu">Settings</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-members" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-users"></i>
+                <span class="hide-menu">Members</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-requests" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-user-question"></i>
+                <span class="hide-menu">Join Requests</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a id="group-nav-invites" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-ticket"></i>
+                <span class="hide-menu">Invite</span>
+              </a>
+            </li>
+            <li id="group-admin-cap" class="nav-small-cap" hidden>
+              <span class="hide-menu">Admin</span>
+            </li>
+            <li id="group-nav-update-item" class="sidebar-item" hidden>
+              <a id="group-nav-update" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-edit"></i>
+                <span class="hide-menu">Update Group</span>
+              </a>
+            </li>
+            <li id="group-nav-add-cycle-item" class="sidebar-item" hidden>
+              <a id="group-nav-add-cycle" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
+                <i class="ti ti-plus"></i>
+                <span class="hide-menu">Add New Cycle</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </aside>
+
+    <div class="body-wrapper">
+      <header class="app-header">
+        <nav class="navbar navbar-expand-lg navbar-light dashboard-topbar">
+          <div class="container-fluid p-0">
+            <div class="d-flex align-items-center gap-3">
+              <a class="nav-link d-xl-none p-0 sidebartoggler" href="javascript:void(0)" aria-label="Toggle sidebar">
+                <i class="ti ti-menu-2 fs-7"></i>
+              </a>
+              <div class="workspace-page-copy">
+                <div id="page-title-label" class="portal-mini-title">Group workspace</div>
+                <h1 id="page-title-heading">My Cycles</h1>
+              </div>
+            </div>
+
+            <div id="workspace-user-menu" class="ms-auto"></div>
+          </div>
+        </nav>
+      </header>
+
+      <div class="container-fluid py-4">
+        <div class="workspace-legacy-stack">
+          <section class="dashboard-panel card">
+            <div class="card-body">
+              <div class="workspace-legacy-intro">
+                <div>
+                  <h2 id="group-name">Loading group...</h2>
+                  <p id="group-subtitle">Manage cycle rounds for this group workspace.</p>
+                </div>
+                <p id="group-note" class="dashboard-note mb-0">Preparing cycles</p>
+              </div>
+
+              <p id="settings-hint" class="dashboard-note mb-3"></p>
+
+              <div class="toolbar" role="group" aria-label="Cycle actions">
+                <div class="toolbar-left">
+                  <button id="open-group" class="btn btn-secondary" type="button">Dashboard</button>
+                  <button id="open-members" class="btn btn-secondary" type="button">Members</button>
+                  <button id="open-settings" class="btn btn-secondary" type="button">Settings</button>
+                </div>
+                <div class="toolbar-right">
+                  <button id="refresh" class="btn btn-secondary" type="button">Refresh</button>
+                  <button id="open-create" class="btn" type="button">Create cycle</button>
+                </div>
+              </div>
+
+              <div id="page-error" class="form-error" role="alert" hidden></div>
+              <div id="list-status" class="dashboard-note mb-3" aria-live="polite"></div>
+              <ul id="cycles-list" class="list" aria-label="Cycles"></ul>
+
+              <div class="pager" aria-label="Pagination">
+                <button id="prev" class="btn btn-secondary" type="button">Prev</button>
+                <span id="page-label" class="dashboard-note">Page 1</span>
+                <button id="next" class="btn btn-secondary" type="button">Next</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
-
-    <section class="card" aria-label="Cycles list">
-      <div class="card-header">
-        <h2 id="group-name">—</h2>
-        <p id="group-note" class="hint"></p>
-        <p id="settings-hint" class="hint"></p>
-      </div>
-
-      <div class="card-body">
-        <div id="page-error" class="form-error" role="alert" hidden></div>
-
-        <div class="toolbar" role="group" aria-label="Cycle actions">
-          <div class="toolbar-left">
-            <button id="open-group" class="btn btn-secondary" type="button">Group</button>
-            <button id="open-members" class="btn btn-secondary" type="button">Members</button>
-            <button id="open-settings" class="btn btn-secondary" type="button">Settings</button>
-          </div>
-          <div class="toolbar-right">
-            <button id="refresh" class="btn btn-secondary" type="button">Refresh</button>
-            <button id="open-create" class="btn" type="button">Create cycle</button>
-          </div>
-        </div>
-
-        <div id="list-status" class="hint" aria-live="polite"></div>
-        <ul id="cycles-list" class="list" aria-label="Cycles"></ul>
-
-        <div class="pager" aria-label="Pagination">
-          <button id="prev" class="btn btn-secondary" type="button">Prev</button>
-          <span id="page-label" class="hint">Page 1</span>
-          <button id="next" class="btn btn-secondary" type="button">Next</button>
-        </div>
-      </div>
-    </section>
-  </main>
+  </div>
 
   <div id="modal-overlay" class="modal-overlay" hidden></div>
   <div id="create-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="create-title" hidden>
     <h3 id="create-title">Create cycle</h3>
-    <p class="hint">Only creator/admin can create and start or stop cycles.</p>
+    <p class="hint">Only the creator or an admin can create and start cycles for this group.</p>
 
     <form id="create-form" novalidate>
       <div id="form-error" class="form-error" role="alert" hidden></div>
 
-      <div class="field">
-        <label for="start_date">Start date</label>
-        <input id="start_date" type="date" required />
-      </div>
+      <div class="workspace-form-grid cols-2">
+        <div class="field">
+          <label for="start_date">Start date</label>
+          <input id="start_date" type="date" required />
+        </div>
 
-      <div class="field">
-        <label for="frequency">Frequency</label>
-        <select id="frequency" class="select">
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-          <option value="monthly">Monthly</option>
-          <option value="custom_days">Custom days</option>
-        </select>
-      </div>
+        <div class="field">
+          <label for="frequency">Frequency</label>
+          <select id="frequency" class="select">
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="custom_days">Custom days</option>
+          </select>
+        </div>
 
-      <div class="field" id="custom-days-wrap" hidden>
-        <label for="custom_days">Custom days</label>
-        <input id="custom_days" type="number" min="1" step="1" placeholder="e.g. 10" />
-      </div>
+        <div class="field" id="custom-days-wrap" hidden>
+          <label for="custom_days">Custom days</label>
+          <input id="custom_days" type="number" min="1" step="1" placeholder="e.g. 10" />
+        </div>
 
-      <div class="field">
-        <label class="check">
-          <input id="auto_start" type="checkbox" />
-          <span>Start immediately after create</span>
-        </label>
+        <div class="field">
+          <label class="check">
+            <input id="auto_start" type="checkbox" />
+            <span>Start immediately after create</span>
+          </label>
+        </div>
       </div>
 
       <div class="modal-actions">
@@ -95,6 +202,10 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
+  <script src="../assets/libs/jquery/dist/jquery.min.js"></script>
+  <script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/js/app.min.js"></script>
+  <script src="../assets/js/sidebarmenu.js"></script>
   <script src="../js/app.js" defer></script>
   <script src="../modules/user/user_api.js" defer></script>
   <script src="../modules/group/group_api.js" defer></script>

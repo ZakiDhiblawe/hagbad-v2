@@ -272,6 +272,93 @@
         target.appendChild(buildUserMenu(profile, options));
     }
 
+    function resolveNode(target) {
+        if (!target) return null;
+        if (typeof target === "string") return document.querySelector(target);
+        return target;
+    }
+
+    function setTextContent(target, value) {
+        const node = resolveNode(target);
+        if (!node) return;
+        node.textContent = value || "";
+    }
+
+    function setHref(target, href) {
+        const node = resolveNode(target);
+        if (!node) return;
+        node.setAttribute("href", href);
+    }
+
+    function setHidden(target, hidden) {
+        const node = resolveNode(target);
+        if (!node) return;
+        node.hidden = !!hidden;
+    }
+
+    function applyGroupWorkspaceNav({
+        groupId,
+        activeKey = "",
+        pageTitle = "",
+        pageLabel = "Group workspace",
+        canUpdateGroup = false,
+        canCreateCycle = false,
+    } = {}) {
+        if (!groupId) return null;
+
+        const links = {
+            dashboard: `group_detail.html?id=${groupId}`,
+            cycles: `cycles.html?group_id=${groupId}`,
+            settings: `group_settings.html?group_id=${groupId}`,
+            members: `group_members.html?group_id=${groupId}`,
+            requests: `group_review.html?group_id=${groupId}`,
+            invites: `invites.html?group_id=${groupId}`,
+            update: `group_detail.html?id=${groupId}&mode=edit`,
+            add_cycle: `cycles.html?group_id=${groupId}&open=create`,
+        };
+
+        const navSelectors = {
+            dashboard: "#group-nav-dashboard",
+            cycles: "#group-nav-cycles",
+            settings: "#group-nav-settings",
+            members: "#group-nav-members",
+            requests: "#group-nav-requests",
+            invites: "#group-nav-invites",
+            update: "#group-nav-update",
+            add_cycle: "#group-nav-add-cycle",
+        };
+
+        Object.entries(navSelectors).forEach(([key, selector]) => {
+            const node = resolveNode(selector);
+            if (!node) return;
+            setHref(node, links[key]);
+            const isActive = key === activeKey;
+            node.classList.toggle("active", isActive);
+            if (isActive) {
+                node.setAttribute("aria-current", "page");
+            } else {
+                node.removeAttribute("aria-current");
+            }
+        });
+
+        const updateItem = resolveNode("#group-nav-update-item");
+        const addCycleItem = resolveNode("#group-nav-add-cycle-item");
+        const adminCap = resolveNode("#group-admin-cap");
+
+        if (updateItem) updateItem.hidden = !canUpdateGroup;
+        if (addCycleItem) addCycleItem.hidden = !canCreateCycle;
+        if (adminCap) adminCap.hidden = !(canUpdateGroup || canCreateCycle);
+
+        setHref("#group-brand-link", links.dashboard);
+        setTextContent("#page-title-label", pageLabel);
+        if (pageTitle) {
+            const heading = resolveNode("#page-title-heading") || resolveNode("#page-title");
+            if (heading) heading.textContent = pageTitle;
+        }
+
+        return links;
+    }
+
     function renderHeader(activePage = "") {
         const mount = document.getElementById("app-header");
         if (!mount) return;
@@ -402,6 +489,7 @@
         getStoredProfile,
         setStoredProfile,
         mountUserMenu,
+        applyGroupWorkspaceNav,
         navigate,
         showToast,
         setButtonLoading,

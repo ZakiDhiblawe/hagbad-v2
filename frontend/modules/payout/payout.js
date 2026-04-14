@@ -5,6 +5,24 @@
   function text(el, value) { if (el) el.textContent = value; }
   function show(el, yes) { if (el) el.hidden = !yes; }
 
+  function mountWorkspaceMenu(profile) {
+    const mount = qs("#workspace-user-menu");
+    if (!mount || !profile) return;
+    APP.mountUserMenu(mount, profile, { compact: false });
+  }
+
+  function applyGroupWorkspace(profile, group, role, pageTitle) {
+    if (!group) return;
+    mountWorkspaceMenu(profile);
+    APP.applyGroupWorkspaceNav({
+      groupId: group.id,
+      activeKey: "cycles",
+      pageTitle,
+      canUpdateGroup: Number(group.created_by) === Number(profile.id),
+      canCreateCycle: Number(group.created_by) === Number(profile.id) || role === "admin",
+    });
+  }
+
   function qparam(name) {
     return new URL(window.location.href).searchParams.get(name);
   }
@@ -210,6 +228,7 @@
     const group = await GroupAPI.getGroup(cycle.group_id);
     const role = await myRole(cycle.group_id, profile.id).catch(() => null);
     const canManage = Number(group.created_by) === Number(profile.id) || role === "admin";
+    applyGroupWorkspace(profile, group, role, "Payouts");
 
     text(qs("#cycle-title"), `Payouts for cycle #${cycle.id}`);
     text(qs("#cycle-subtitle"), `${group.name} • admin approval and payout completion`);
@@ -407,6 +426,7 @@
     const group = await GroupAPI.getGroup(cycle.group_id);
     const role = await myRole(cycle.group_id, profile.id).catch(() => null);
     const canManage = Number(group.created_by) === Number(profile.id) || role === "admin";
+    applyGroupWorkspace(profile, group, role, "Payout Detail");
 
     qs("#back").addEventListener("click", () => {
       APP.navigate(`payouts.html?cycle_id=${payout.cycle_id}${payout.cycle_member_id ? `&cycle_member_id=${payout.cycle_member_id}` : ""}`);

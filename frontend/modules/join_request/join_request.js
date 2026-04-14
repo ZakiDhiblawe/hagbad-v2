@@ -22,6 +22,24 @@
         el.hidden = !yes;
     }
 
+    function mountWorkspaceMenu(profile) {
+        const mount = qs("#workspace-user-menu");
+        if (!mount || !profile) return;
+        APP.mountUserMenu(mount, profile, { compact: false });
+    }
+
+    function applyGroupWorkspace(profile, group, role, pageTitle) {
+        if (!group || !profile) return;
+        mountWorkspaceMenu(profile);
+        APP.applyGroupWorkspaceNav({
+            groupId: group.id,
+            activeKey: "requests",
+            pageTitle,
+            canUpdateGroup: Number(group.created_by) === Number(profile.id),
+            canCreateCycle: Number(group.created_by) === Number(profile.id) || role === "admin",
+        });
+    }
+
     function setBox(id, message) {
         const el = qs(id);
         if (!el) return;
@@ -94,6 +112,33 @@
         }
 
         return data;
+    }
+
+    async function ensureWorkspaceProfile() {
+        try {
+            return await APP.fetchCurrentUser(true);
+        } catch (err) {
+            if (handleAuthError(err)) return null;
+            throw err;
+        }
+    }
+
+    async function myRole(groupId, myId) {
+        for (let page = 1; page <= 25; page++) {
+            const params = new URLSearchParams({ group_id: String(groupId), page: String(page), size: "100" });
+            const res = await fetch(`${APP.getApiBase()}/group-members/?${params.toString()}`, {
+                headers: {
+                    Accept: "application/json",
+                    Authorization: `Bearer ${APP.getToken()}`,
+                },
+            });
+            if (!res.ok) return null;
+            const items = await res.json().catch(() => []);
+            const me = (items || []).find((member) => Number(member.user_id) === Number(myId));
+            if (me) return me.role;
+            if (!Array.isArray(items) || items.length < 100) break;
+        }
+        return null;
     }
 
     function renderMyRequests(items) {
@@ -469,6 +514,25 @@
         const groupIdFromUrl = Number(qparam("group_id") || "");
         const groupIdInput = qs("#group_id");
         const adminGroupIdInput = qs("#admin_group_id");
+
+        if (hasGroupReviewUI()) {
+            ensureWorkspaceProfile()
+                .then(async (profile) => {
+                    if (!profile) return;
+                    if (groupIdFromUrl && groupIdFromUrl > 0) {
+                        const group = await safeFetchGroup(groupIdFromUrl);
+                        const role = await myRole(groupIdFromUrl, profile.id).catch(() => null);
+                        applyGroupWorkspace(profile, group, role, "Join Requests");
+                    } else {
+                        mountWorkspaceMenu(profile);
+                    }
+                })
+                .catch((err) => {
+                    if (!handleAuthError(err)) {
+                        APP.showToast(err.message || "Failed to load workspace profile.", "error");
+                    }
+                });
+        }
 
         if (groupIdFromUrl && groupIdFromUrl > 0) {
             if (groupIdInput) groupIdInput.value = groupIdFromUrl;

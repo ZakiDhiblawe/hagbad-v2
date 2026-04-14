@@ -5,6 +5,24 @@
   function text(el, v) { if (el) el.textContent = v; }
   function show(el, yes) { if (!el) return; el.hidden = !yes; }
 
+  function mountWorkspaceMenu(profile) {
+    const mount = qs("#workspace-user-menu");
+    if (!mount || !profile) return;
+    APP.mountUserMenu(mount, profile, { compact: false });
+  }
+
+  function applyGroupWorkspace(profile, group, role, pageTitle) {
+    if (!group) return;
+    mountWorkspaceMenu(profile);
+    APP.applyGroupWorkspaceNav({
+      groupId: group.id,
+      activeKey: "members",
+      pageTitle,
+      canUpdateGroup: Number(group.created_by) === Number(profile.id),
+      canCreateCycle: Number(group.created_by) === Number(profile.id) || role === "admin",
+    });
+  }
+
   function qparam(name) {
     return new URL(window.location.href).searchParams.get(name);
   }
@@ -59,6 +77,16 @@
     }
   }
 
+  async function myRole(groupId, myId) {
+    for (let page = 1; page <= 50; page++) {
+      const items = await GroupMemberAPI.listMembers({ group_id: groupId, page, size: 100 });
+      const me = items.find((member) => Number(member.user_id) === Number(myId));
+      if (me) return me.role;
+      if (items.length < 100) break;
+    }
+    return null;
+  }
+
   function roleBadge(role) {
     const span = document.createElement("span");
     span.className = "badge";
@@ -82,18 +110,21 @@
     if (!profile) return;
 
     const group = await fetchGroup(groupId);
+    const myMembershipRole = await myRole(groupId, profile.id).catch(() => null);
+    applyGroupWorkspace(profile, group, myMembershipRole, "Members");
     text(qs("#group-name"), group.name);
     text(qs("#group-subtitle"), "Members list and management.");
     text(qs("#group-badges"), `Group ID ${group.id} • ${group.privacy} • ${group.status}`);
 
     let page = 1;
-    let role = "";
+    let roleFilter = "";
 
     const list = qs("#members-list");
     const status = qs("#list-status");
     const pageLabel = qs("#page-label");
 
     const canCreator = Number(group.created_by) === Number(profile.id);
+    const canManageGroup = canCreator || myMembershipRole === "admin";
 
     function setStatus(msg) { text(status, msg || ""); }
 
@@ -151,23 +182,14 @@
       setStatus("Loading…");
 
       try {
-        const items = await GroupMemberAPI.listMembers({ group_id: groupId, role, page, size: PAGE_SIZE });
-
-        // Determine admin by locating current user membership row in this page (best-effort)
-        // If not found on this page, admin may still be true; we handle more robustly in detail page.
-        const me = items.find((x) => Number(x.user_id) === Number(profile.id));
-        const isAdmin = me && me.role === "admin";
-
-        const canManage = canCreator || isAdmin;
-
-        render(items, canManage);
+        const items = await GroupMemberAPI.listMembers({ group_id: groupId, role: roleFilter, page, size: PAGE_SIZE });
+        render(items, canManageGroup);
 
         text(pageLabel, `Page ${page}`);
         qs("#prev").disabled = page <= 1;
         qs("#next").disabled = items.length < PAGE_SIZE;
 
-        // Add button visible only for creator/admin (best-effort admin)
-        show(qs("#open-add"), canManage);
+        show(qs("#open-add"), canManageGroup);
 
         setStatus("");
       } catch (e) {
@@ -181,7 +203,7 @@
     }
 
     qs("#role-filter").addEventListener("change", () => {
-      role = qs("#role-filter").value;
+      roleFilter = qs("#role-filter").value;
       page = 1;
       load();
     });
@@ -269,6 +291,8 @@
     if (!profile) return;
 
     const group = await fetchGroup(groupId);
+    const role = await myRole(groupId, profile.id).catch(() => null);
+    applyGroupWorkspace(profile, group, role, "Member Detail");
 
     // Find member by paging through list endpoint (no GET /group-members/{id} exists)
     async function findMember() {
@@ -316,20 +340,7 @@
 
     // Determine permission: creator OR admin (by checking your own membership role)
     const isCreator = Number(group.created_by) === Number(profile.id);
-
-    let amAdmin = false;
-    try {
-      // Search for current user membership (pages up to 50)
-      for (let p = 1; p <= 50; p++) {
-        const items = await GroupMemberAPI.listMembers({ group_id: groupId, page: p, size: 100 });
-        const me = items.find((x) => Number(x.user_id) === Number(profile.id));
-        if (me) { amAdmin = me.role === "admin"; break; }
-        if (items.length < 100) break;
-      }
-    } catch {
-      // If we cannot list, we can't be admin; creator still true if creator.
-      amAdmin = false;
-    }
+    const amAdmin = role === "admin";
 
     const canManage = isCreator || amAdmin;
     const permNote = qs("#perm-note");

@@ -16,11 +16,77 @@
         el.hidden = !yes;
     }
 
+    function mountWorkspaceMenu(profile) {
+        const mount = qs("#workspace-user-menu");
+        if (!mount || !profile) return;
+        APP.mountUserMenu(mount, profile, { compact: false });
+    }
+
+    function applyGroupWorkspace(profile, group, role, pageTitle) {
+        if (!group || !profile) return;
+        mountWorkspaceMenu(profile);
+        APP.applyGroupWorkspaceNav({
+            groupId: group.id,
+            activeKey: "invites",
+            pageTitle,
+            canUpdateGroup: Number(group.created_by) === Number(profile.id),
+            canCreateCycle: Number(group.created_by) === Number(profile.id) || role === "admin",
+        });
+    }
+
     function setBox(id, message) {
         const el = qs(id);
         if (!el) return;
         el.hidden = !message;
         el.textContent = message || "";
+    }
+
+    async function ensureWorkspaceProfile() {
+        try {
+            return await APP.fetchCurrentUser(true);
+        } catch (err) {
+            if (err.status === 401) {
+                APP.clearToken();
+                APP.showToast("Session expired. Please log in again.", "info");
+                APP.navigate("../pages/login.html");
+                return null;
+            }
+            throw err;
+        }
+    }
+
+    async function safeFetchGroup(groupId) {
+        const res = await fetch(`${APP.getApiBase()}/groups/${groupId}`, {
+            headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${APP.getToken()}`,
+            },
+        });
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+            const msg = data && typeof data.detail === "string" ? data.detail : `Failed to load group (${res.status})`;
+            throw { status: res.status, message: msg };
+        }
+        return data;
+    }
+
+    async function myRole(groupId, myId) {
+        for (let page = 1; page <= 25; page++) {
+            const params = new URLSearchParams({ group_id: String(groupId), page: String(page), size: "100" });
+            const res = await fetch(`${APP.getApiBase()}/group-members/?${params.toString()}`, {
+                headers: {
+                    Accept: "application/json",
+                    Authorization: `Bearer ${APP.getToken()}`,
+                },
+            });
+            if (!res.ok) return null;
+            const items = await res.json().catch(() => []);
+            const me = (items || []).find((member) => Number(member.user_id) === Number(myId));
+            if (me) return me.role;
+            if (!Array.isArray(items) || items.length < 100) break;
+        }
+        return null;
     }
 
     function clearMessages() {
@@ -338,6 +404,21 @@
 
         const groupIdFromUrl = Number(qparam("group_id") || "");
         const groupIdInput = qs("#group_id");
+
+        ensureWorkspaceProfile()
+            .then(async (profile) => {
+                if (!profile) return;
+                if (groupIdFromUrl && groupIdFromUrl > 0) {
+                    const group = await safeFetchGroup(groupIdFromUrl);
+                    const role = await myRole(groupIdFromUrl, profile.id).catch(() => null);
+                    applyGroupWorkspace(profile, group, role, "Invites");
+                } else {
+                    mountWorkspaceMenu(profile);
+                }
+            })
+            .catch((err) => {
+                APP.showToast(err.message || "Failed to load workspace profile.", "error");
+            });
 
         if (groupIdFromUrl && groupIdFromUrl > 0) {
             groupIdInput.value = groupIdFromUrl;
