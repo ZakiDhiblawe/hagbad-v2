@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.group.models import Group, GroupStatus
+from app.group.models import Group, GroupPrivacy, GroupStatus
 from app.group_member.models import GroupMember, GroupMemberRole
 from app.group_member.schemas import GroupMemberOut
 from app.invite.models import Invite
@@ -48,9 +48,34 @@ def is_group_admin(db: Session, group_id: int, user_id: int) -> bool:
     )
 
 
-def require_creator_or_admin(db: Session, group_id: int, user_id: int) -> None:
-    if not (is_group_creator(db, group_id, user_id) or is_group_admin(db, group_id, user_id)):
+def is_group_moderator(db: Session, group_id: int, user_id: int) -> bool:
+    return (
+        db.query(GroupMember)
+        .filter(
+            GroupMember.group_id == group_id,
+            GroupMember.user_id == user_id,
+            GroupMember.role == GroupMemberRole.moderator,
+        )
+        .first()
+        is not None
+    )
+
+
+def require_creator_admin_or_moderator(db: Session, group_id: int, user_id: int) -> None:
+    if not (
+        is_group_creator(db, group_id, user_id)
+        or is_group_admin(db, group_id, user_id)
+        or is_group_moderator(db, group_id, user_id)
+    ):
         raise HTTPException(status_code=403, detail="Not allowed")
+
+
+def require_creator_or_admin(db: Session, group_id: int, user_id: int) -> None:
+    if not (
+        is_group_creator(db, group_id, user_id)
+        or is_group_admin(db, group_id, user_id)
+    ):
+        raise HTTPException(status_code=403, detail="Only group creator or admin can deactivate invite codes")
 
 
 def get_group_or_404(db: Session, group_id: int) -> Group:
@@ -67,7 +92,16 @@ def create_invite(
     current_user: User = Depends(get_current_user),
 ) -> Invite:
     group = get_group_or_404(db, payload.group_id)
-    require_creator_or_admin(db, group.id, current_user.id)
+    require_creator_admin_or_moderator(db, group.id, current_user.id)
+
+    if group.status != GroupStatus.active:
+        raise HTTPException(status_code=400, detail="Group is not active")
+
+    if group.privacy != GroupPrivacy.private or group.visible:
+        raise HTTPException(
+            status_code=400,
+            detail="Invite codes are only available for hidden private groups",
+        )
 
     if payload.expires_at is not None:
         exp = _ensure_aware(payload.expires_at)
@@ -75,6 +109,22 @@ def create_invite(
             raise HTTPException(status_code=400, detail="expires_at must be in the future")
     else:
         exp = None
+
+    active_invite = (
+        db.query(Invite)
+        .filter(Invite.group_id == group.id, Invite.used.is_(False))
+        .all()
+    )
+    active_invite = [
+        invite
+        for invite in active_invite
+        if invite.expires_at is None or _ensure_aware(invite.expires_at) > _now_utc()
+    ]
+    if active_invite:
+        raise HTTPException(
+            status_code=400,
+            detail="Deactivate the current active code before generating a new one",
+        )
 
     # Secure random code (32 hex chars for token_hex(16)). citeturn0search3
     for _ in range(5):
@@ -99,7 +149,7 @@ def list_invites(
     current_user: User = Depends(get_current_user),
 ) -> list[Invite]:
     group = get_group_or_404(db, group_id)
-    require_creator_or_admin(db, group.id, current_user.id)
+    require_creator_admin_or_moderator(db, group.id, current_user.id)
 
     return (
         db.query(Invite)
@@ -126,7 +176,7 @@ def redeem_invite(
         raise HTTPException(status_code=404, detail="Invite not found")
 
     if invite.used:
-        raise HTTPException(status_code=400, detail="Invite already used")
+        raise HTTPException(status_code=400, detail="Invite code is inactive")
 
     if invite.expires_at is not None and _ensure_aware(invite.expires_at) <= _now_utc():
         raise HTTPException(status_code=400, detail="Invite expired")
@@ -134,6 +184,9 @@ def redeem_invite(
     group = get_group_or_404(db, invite.group_id)
     if group.status == GroupStatus.closed:
         raise HTTPException(status_code=400, detail="Group is closed")
+
+    if group.privacy != GroupPrivacy.private or group.visible:
+        raise HTTPException(status_code=400, detail="This invite code is no longer available")
 
     # Already member?
     existing = (
@@ -146,7 +199,6 @@ def redeem_invite(
 
     member = GroupMember(group_id=group.id, user_id=current_user.id, role=GroupMemberRole.member)
     db.add(member)
-    invite.used = True
 
     try:
         db.commit()
@@ -171,6 +223,9 @@ def delete_invite(
     group = get_group_or_404(db, invite.group_id)
     require_creator_or_admin(db, group.id, current_user.id)
 
-    db.delete(invite)
+    if invite.used:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    invite.used = True
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

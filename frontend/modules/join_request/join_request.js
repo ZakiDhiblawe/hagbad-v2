@@ -1,20 +1,10 @@
 (function () {
-    const AUTO_REFRESH_MS = 5000;
-
-    let myRequestsTimer = null;
-    let groupRequestsTimer = null;
-    let lastReviewedGroupId = null;
-
     function qs(sel) {
         return document.querySelector(sel);
     }
 
-    function qparam(name) {
-        return new URL(window.location.href).searchParams.get(name);
-    }
-
     function text(el, value) {
-        if (el) el.textContent = value;
+        if (el) el.textContent = value || "";
     }
 
     function show(el, yes) {
@@ -22,22 +12,38 @@
         el.hidden = !yes;
     }
 
-    function mountWorkspaceMenu(profile) {
-        const mount = qs("#workspace-user-menu");
-        if (!mount || !profile) return;
-        APP.mountUserMenu(mount, profile, { compact: false });
+    function empty(el) {
+        if (el) el.innerHTML = "";
     }
 
-    function applyGroupWorkspace(profile, group, role, pageTitle) {
-        if (!group || !profile) return;
-        mountWorkspaceMenu(profile);
-        APP.applyGroupWorkspaceNav({
-            groupId: group.id,
-            activeKey: "requests",
-            pageTitle,
-            canUpdateGroup: Number(group.created_by) === Number(profile.id),
-            canCreateCycle: Number(group.created_by) === Number(profile.id) || role === "admin",
-        });
+    function qparam(name) {
+        return new URL(window.location.href).searchParams.get(name);
+    }
+
+    function formatDate(value) {
+        if (!value) return "-";
+        const dt = new Date(value);
+        if (Number.isNaN(dt.getTime())) return String(value);
+        return dt.toLocaleString();
+    }
+
+    function setInlineButtonLoading(btn, loading, label) {
+        if (!btn) return;
+        if (loading) {
+            btn.dataset.originalHtml = btn.innerHTML;
+            btn.innerHTML = `<span>${label}</span>`;
+            btn.disabled = true;
+            return;
+        }
+        btn.innerHTML = btn.dataset.originalHtml || btn.innerHTML;
+        btn.disabled = false;
+    }
+
+    function makeEmptyState(message) {
+        const div = document.createElement("div");
+        div.className = "member-empty-state";
+        div.textContent = message;
+        return div;
     }
 
     function setBox(id, message) {
@@ -47,40 +53,10 @@
         el.textContent = message || "";
     }
 
-    function clearMessages() {
-        setBox("#my-error", "");
-        setBox("#my-success", "");
-        setBox("#admin-error", "");
-        setBox("#admin-success", "");
-        setBox("#admin-info", "");
-    }
-
-    function hasMyRequestsUI() {
-        return !!qs("#create-request-form") && !!qs("#my-request-list");
-    }
-
-    function hasGroupReviewUI() {
-        return !!qs("#admin_group_id") && !!qs("#group-request-list");
-    }
-
-    function badgeForStatus(status) {
-        if (status === "approved") return { label: "Approved", cls: "ok" };
-        if (status === "rejected") return { label: "Rejected", cls: "bad" };
-        return { label: "Pending", cls: "warn" };
-    }
-
-    function formatDate(value) {
-        if (!value) return "-";
-        const dt = new Date(value);
-        if (Number.isNaN(dt.getTime())) return value;
-        return dt.toLocaleString();
-    }
-
-    function makeEmptyState(message) {
-        const div = document.createElement("div");
-        div.className = "empty-state";
-        div.textContent = message;
-        return div;
+    function mountWorkspaceMenu(profile) {
+        const mount = qs("#workspace-user-menu");
+        if (!mount || !profile) return;
+        APP.mountUserMenu(mount, profile, { compact: false });
     }
 
     function handleAuthError(err) {
@@ -93,27 +69,6 @@
         return false;
     }
 
-    async function safeFetchGroup(groupId) {
-        const res = await fetch(`${APP.getApiBase()}/groups/${groupId}`, {
-            headers: {
-                Accept: "application/json",
-                Authorization: `Bearer ${APP.getToken()}`,
-            },
-        });
-
-        const data = await res.json().catch(() => null);
-
-        if (!res.ok) {
-            const msg =
-                data && typeof data.detail === "string"
-                    ? data.detail
-                    : `Failed to load group (${res.status})`;
-            throw { status: res.status, message: msg };
-        }
-
-        return data;
-    }
-
     async function ensureWorkspaceProfile() {
         try {
             return await APP.fetchCurrentUser(true);
@@ -123,8 +78,28 @@
         }
     }
 
+    async function safeFetchGroup(groupId) {
+        const res = await fetch(`${APP.getApiBase()}/groups/${groupId}`, {
+            headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${APP.getToken()}`,
+            },
+        });
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+            const message =
+                data && typeof data.detail === "string"
+                    ? data.detail
+                    : `Failed to load group (${res.status})`;
+            throw { status: res.status, message };
+        }
+
+        return data;
+    }
+
     async function myRole(groupId, myId) {
-        for (let page = 1; page <= 25; page++) {
+        for (let page = 1; page <= 25; page += 1) {
             const params = new URLSearchParams({ group_id: String(groupId), page: String(page), size: "100" });
             const res = await fetch(`${APP.getApiBase()}/group-members/?${params.toString()}`, {
                 headers: {
@@ -141,11 +116,63 @@
         return null;
     }
 
+    function applyGroupWorkspace(profile, group, role, pageTitle) {
+        if (!group || !profile) return;
+        mountWorkspaceMenu(profile);
+        APP.applyGroupWorkspaceNav({
+            groupId: group.id,
+            activeKey: "requests",
+            pageTitle,
+            canUpdateGroup: Number(group.created_by) === Number(profile.id),
+            canCreateCycle: Number(group.created_by) === Number(profile.id) || role === "admin",
+            canAccessAdministration:
+                Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator",
+            showJoinRequests: group.privacy !== "public",
+        });
+    }
+
+    function createBadge(label, tone = "info") {
+        const badge = document.createElement("span");
+        badge.className = `badge ${tone}`;
+        badge.textContent = label;
+        return badge;
+    }
+
+    function createContextChip(label, tone = "neutral") {
+        const chip = document.createElement("span");
+        chip.className = `member-context-chip ${tone}`;
+        chip.textContent = label;
+        return chip;
+    }
+
+    function isExpired(expiresAt) {
+        if (!expiresAt) return false;
+        const dt = new Date(expiresAt);
+        return Number.isFinite(dt.getTime()) && dt.getTime() <= Date.now();
+    }
+
+    function isActiveInvite(invite) {
+        return Boolean(invite) && !invite.used && !isExpired(invite.expires_at);
+    }
+
+    function activeInvite(invites) {
+        return (invites || []).find((invite) => isActiveInvite(invite)) || null;
+    }
+
+    function copyToClipboard(value) {
+        if (!navigator.clipboard) {
+            APP.showToast("Clipboard is not available in this browser.", "error");
+            return;
+        }
+        navigator.clipboard.writeText(value)
+            .then(() => APP.showToast("Code copied", "success"))
+            .catch(() => APP.showToast("Failed to copy code", "error"));
+    }
+
     function renderMyRequests(items) {
         const mount = qs("#my-request-list");
         if (!mount) return;
-
-        mount.innerHTML = "";
+        empty(mount);
 
         if (!Array.isArray(items) || items.length === 0) {
             mount.appendChild(makeEmptyState("You do not have any join requests yet."));
@@ -169,31 +196,17 @@
             const meta = document.createElement("div");
             meta.className = "request-meta";
 
-            const badgeRow = document.createElement("div");
-            badgeRow.className = "badge-row";
-
-            const statusData = badgeForStatus(item.status);
-            const statusBadge = document.createElement("span");
-            statusBadge.className = `badge ${statusData.cls}`;
-            statusBadge.textContent = statusData.label;
-
-            const idBadge = document.createElement("span");
-            idBadge.className = "badge info";
-            idBadge.textContent = `Request #${item.id}`;
-
-            badgeRow.appendChild(statusBadge);
-            badgeRow.appendChild(idBadge);
+            const badges = document.createElement("div");
+            badges.className = "badge-row";
+            badges.appendChild(createBadge(item.status === "approved" ? "Approved" : item.status === "rejected" ? "Rejected" : "Pending",
+                item.status === "approved" ? "ok" : item.status === "rejected" ? "bad" : "warn"));
+            badges.appendChild(createBadge(`Request #${item.id}`, "info"));
 
             const requestedAt = document.createElement("div");
             requestedAt.textContent = `Requested: ${formatDate(item.requested_at)}`;
 
-            const handledBy = document.createElement("div");
-            handledBy.textContent = `Handled by: ${item.handled_by ?? "-"}`;
-
-            meta.appendChild(badgeRow);
+            meta.appendChild(badges);
             meta.appendChild(requestedAt);
-            meta.appendChild(handledBy);
-
             left.appendChild(title);
             left.appendChild(meta);
 
@@ -205,166 +218,32 @@
                 cancelBtn.type = "button";
                 cancelBtn.className = "btn btn-danger";
                 cancelBtn.textContent = "Cancel";
-
                 cancelBtn.addEventListener("click", async () => {
-                    const ok = window.confirm("Cancel this join request?");
-                    if (!ok) return;
-
+                    if (!window.confirm("Cancel this join request?")) return;
                     APP.setButtonLoading(cancelBtn, true, "Cancelling...");
                     try {
                         await JoinRequestAPI.cancelJoinRequest(item.id);
                         APP.showToast("Join request cancelled", "success");
-                        setBox("#my-success", "Join request cancelled.");
                         await loadMyRequests();
                     } catch (err) {
-                        if (handleAuthError(err)) return;
-                        const msg = err.message || "Failed to cancel request.";
-                        setBox("#my-error", msg);
-                        APP.showToast(msg, "error");
+                        if (!handleAuthError(err)) {
+                            APP.showToast(err.message || "Failed to cancel request.", "error");
+                        }
                     } finally {
                         APP.setButtonLoading(cancelBtn, false);
                     }
                 });
-
                 actions.appendChild(cancelBtn);
             }
 
-            const openGroupBtn = document.createElement("button");
-            openGroupBtn.type = "button";
-            openGroupBtn.className = "btn btn-secondary";
-            openGroupBtn.textContent = "Open Group";
-
-            openGroupBtn.addEventListener("click", () => {
+            const openBtn = document.createElement("button");
+            openBtn.type = "button";
+            openBtn.className = "btn btn-secondary";
+            openBtn.textContent = "Open Group";
+            openBtn.addEventListener("click", () => {
                 APP.navigate(`../pages/group_detail.html?id=${item.group_id}`);
             });
-
-            actions.appendChild(openGroupBtn);
-
-            top.appendChild(left);
-            top.appendChild(actions);
-            card.appendChild(top);
-            mount.appendChild(card);
-        });
-    }
-
-    function renderGroupRequests(items, groupId) {
-        const mount = qs("#group-request-list");
-        if (!mount) return;
-
-        mount.innerHTML = "";
-
-        if (!Array.isArray(items) || items.length === 0) {
-            mount.appendChild(makeEmptyState("No join requests found for this group."));
-            return;
-        }
-
-        items.forEach((item) => {
-            const card = document.createElement("div");
-            card.className = "request-card";
-
-            const top = document.createElement("div");
-            top.className = "request-top";
-
-            const left = document.createElement("div");
-            left.style.flex = "1";
-
-            const title = document.createElement("div");
-            title.className = "request-title";
-            title.textContent = `User #${item.user_id} wants to join Group #${item.group_id}`;
-
-            const meta = document.createElement("div");
-            meta.className = "request-meta";
-
-            const badgeRow = document.createElement("div");
-            badgeRow.className = "badge-row";
-
-            const statusData = badgeForStatus(item.status);
-            const statusBadge = document.createElement("span");
-            statusBadge.className = `badge ${statusData.cls}`;
-            statusBadge.textContent = statusData.label;
-
-            const idBadge = document.createElement("span");
-            idBadge.className = "badge info";
-            idBadge.textContent = `Request #${item.id}`;
-
-            badgeRow.appendChild(statusBadge);
-            badgeRow.appendChild(idBadge);
-
-            const requestedAt = document.createElement("div");
-            requestedAt.textContent = `Requested: ${formatDate(item.requested_at)}`;
-
-            const handledBy = document.createElement("div");
-            handledBy.textContent = `Handled by: ${item.handled_by ?? "-"}`;
-
-            meta.appendChild(badgeRow);
-            meta.appendChild(requestedAt);
-            meta.appendChild(handledBy);
-
-            left.appendChild(title);
-            left.appendChild(meta);
-
-            const actions = document.createElement("div");
-            actions.className = "request-actions";
-
-            if (item.status === "pending") {
-                const approveBtn = document.createElement("button");
-                approveBtn.type = "button";
-                approveBtn.className = "btn btn-success";
-                approveBtn.textContent = "Approve";
-
-                approveBtn.addEventListener("click", async () => {
-                    APP.setButtonLoading(approveBtn, true, "Approving...");
-                    try {
-                        await JoinRequestAPI.decideJoinRequest(item.id, "approve");
-                        APP.showToast("Request approved", "success");
-                        setBox("#admin-success", "Join request approved.");
-                        await loadGroupRequests(groupId);
-                    } catch (err) {
-                        if (handleAuthError(err)) return;
-                        const msg = err.message || "Failed to approve request.";
-                        setBox("#admin-error", msg);
-                        APP.showToast(msg, "error");
-                    } finally {
-                        APP.setButtonLoading(approveBtn, false);
-                    }
-                });
-
-                const rejectBtn = document.createElement("button");
-                rejectBtn.type = "button";
-                rejectBtn.className = "btn btn-danger";
-                rejectBtn.textContent = "Reject";
-
-                rejectBtn.addEventListener("click", async () => {
-                    APP.setButtonLoading(rejectBtn, true, "Rejecting...");
-                    try {
-                        await JoinRequestAPI.decideJoinRequest(item.id, "reject");
-                        APP.showToast("Request rejected", "success");
-                        setBox("#admin-success", "Join request rejected.");
-                        await loadGroupRequests(groupId);
-                    } catch (err) {
-                        if (handleAuthError(err)) return;
-                        const msg = err.message || "Failed to reject request.";
-                        setBox("#admin-error", msg);
-                        APP.showToast(msg, "error");
-                    } finally {
-                        APP.setButtonLoading(rejectBtn, false);
-                    }
-                });
-
-                actions.appendChild(approveBtn);
-                actions.appendChild(rejectBtn);
-            }
-
-            const membersBtn = document.createElement("button");
-            membersBtn.type = "button";
-            membersBtn.className = "btn btn-secondary";
-            membersBtn.textContent = "Members";
-
-            membersBtn.addEventListener("click", () => {
-                APP.navigate(`../pages/group_members.html?group_id=${item.group_id}`);
-            });
-
-            actions.appendChild(membersBtn);
+            actions.appendChild(openBtn);
 
             top.appendChild(left);
             top.appendChild(actions);
@@ -374,89 +253,25 @@
     }
 
     async function loadMyRequests() {
-        if (!hasMyRequestsUI()) return;
+        if (!qs("#my-request-list")) return;
         setBox("#my-error", "");
         try {
             const items = await JoinRequestAPI.listMyJoinRequests();
             renderMyRequests(items);
         } catch (err) {
             if (handleAuthError(err)) return;
-            const msg = err.message || "Failed to load your join requests.";
-            setBox("#my-error", msg);
-            APP.showToast(msg, "error");
+            setBox("#my-error", err.message || "Failed to load your join requests.");
             renderMyRequests([]);
-        }
-    }
-
-    async function loadGroupRequests(groupId) {
-        if (!hasGroupReviewUI()) return;
-        lastReviewedGroupId = groupId || null;
-
-        setBox("#admin-error", "");
-        setBox("#admin-success", "");
-        setBox("#admin-info", groupId && groupId > 0 ? "Loading group requests..." : "Loading requests for your groups...");
-
-        const statusValue = qs("#status_filter").value;
-
-        try {
-            let items;
-            if (groupId && groupId > 0) {
-                const group = await safeFetchGroup(groupId);
-                setBox("#admin-info", `Reviewing join requests for: ${group.name} (Group #${group.id})`);
-                items = await JoinRequestAPI.listGroupJoinRequests(groupId, statusValue);
-            } else {
-                setBox("#admin-info", "Reviewing requests for all groups you manage.");
-                items = await JoinRequestAPI.listManagedJoinRequests(statusValue);
-            }
-            renderGroupRequests(items, groupId);
-        } catch (err) {
-            if (handleAuthError(err)) return;
-
-            const msg = err.message || "Failed to load group join requests.";
-            setBox("#admin-error", msg);
-            setBox("#admin-info", "");
-            APP.showToast(msg, "error");
-
-            const mount = qs("#group-request-list");
-            mount.innerHTML = "";
-            mount.appendChild(makeEmptyState("Could not load group requests."));
-        }
-    }
-
-    function startAutoRefresh() {
-        stopAutoRefresh();
-
-        myRequestsTimer = window.setInterval(() => {
-            if (document.hidden) return;
-            loadMyRequests();
-        }, AUTO_REFRESH_MS);
-
-        groupRequestsTimer = window.setInterval(() => {
-            if (document.hidden) return;
-            if (!lastReviewedGroupId) return;
-            loadGroupRequests(lastReviewedGroupId);
-        }, AUTO_REFRESH_MS);
-    }
-
-    function stopAutoRefresh() {
-        if (myRequestsTimer) {
-            window.clearInterval(myRequestsTimer);
-            myRequestsTimer = null;
-        }
-        if (groupRequestsTimer) {
-            window.clearInterval(groupRequestsTimer);
-            groupRequestsTimer = null;
         }
     }
 
     async function handleCreateJoinRequest(event) {
         event.preventDefault();
-        clearMessages();
+        setBox("#my-error", "");
+        setBox("#my-success", "");
 
-        const groupIdInput = qs("#group_id");
+        const groupId = Number(qs("#group_id").value);
         const btn = qs("#create-request-btn");
-
-        const groupId = Number(groupIdInput.value);
 
         if (!groupId || groupId < 1) {
             setBox("#my-error", "Please enter a valid group id.");
@@ -464,23 +279,368 @@
         }
 
         APP.setButtonLoading(btn, true, "Sending...");
-
         try {
             await JoinRequestAPI.createJoinRequest({ group_id: groupId });
             setBox("#my-success", "Join request sent successfully.");
             APP.showToast("Join request sent", "success");
             await loadMyRequests();
         } catch (err) {
-            if (handleAuthError(err)) return;
-            const msg = err.message || "Failed to send join request.";
-            setBox("#my-error", msg);
-            APP.showToast(msg, "error");
+            if (!handleAuthError(err)) {
+                setBox("#my-error", err.message || "Failed to send join request.");
+                APP.showToast(err.message || "Failed to send join request.", "error");
+            }
         } finally {
             APP.setButtonLoading(btn, false);
         }
     }
 
-    function wireButtons() {
+    function hasGroupReviewUI() {
+        return !!qs("#review-group-name") && !!qs("#group-request-list");
+    }
+
+    function renderReviewBadges(group, role, isCreator) {
+        const mount = qs("#review-badges");
+        empty(mount);
+        if (!mount) return;
+
+        const badges = [
+            createContextChip(`Group #${group.id}`, "neutral"),
+            createContextChip(group.privacy === "private" ? "Private group" : "Public group", group.privacy),
+            createContextChip(group.visible ? "Visible" : "Hidden", group.visible ? "active" : "neutral"),
+        ];
+
+        if (isCreator) {
+            badges.push(createContextChip("Creator view", "admin"));
+        } else if (role) {
+            badges.push(createContextChip(`Your role: ${role === "moderator" ? "Moderator" : "Admin"}`, role));
+        }
+
+        badges.forEach((badge) => mount.appendChild(badge));
+    }
+
+    function renderRequestSummary(requests, activeCode, group) {
+        const counts = (requests || []).reduce((acc, item) => {
+            acc.total += 1;
+            if (item.status === "pending") acc.pending += 1;
+            else if (item.status === "approved") acc.approved += 1;
+            else if (item.status === "rejected") acc.rejected += 1;
+            return acc;
+        }, { total: 0, pending: 0, approved: 0, rejected: 0 });
+
+        text(qs("#summary-total-requests"), String(counts.total));
+        text(qs("#summary-pending-requests"), String(counts.pending));
+        text(qs("#summary-approved-requests"), String(counts.approved));
+        text(qs("#summary-active-code"), activeCode ? "Ready" : "None");
+
+        const note = qs("#summary-mode-note");
+        if (!note) return;
+
+        if (group.privacy === "public") {
+            note.textContent = "Public groups do not use join requests or hidden invite codes.";
+        } else if (group.visible) {
+            note.textContent = "Visible private groups accept membership requests from discovery.";
+        } else {
+            note.textContent = activeCode
+                ? "Hidden private group. Share the active code to let members join directly."
+                : "Hidden private group. Generate one active code to allow direct joining.";
+        }
+    }
+
+    function renderRequestList(group, requests, permissions) {
+        const mount = qs("#group-request-list");
+        empty(mount);
+        if (!mount) return;
+
+        const pending = (requests || []).filter((item) => item.status === "pending");
+        text(qs("#pending-count-label"), `${pending.length} pending`);
+
+        if (group.privacy === "public") {
+            mount.appendChild(makeEmptyState("Public groups do not use join requests."));
+            return;
+        }
+
+        if (!group.visible) {
+            mount.appendChild(makeEmptyState("Hidden private groups do not collect join requests. Use the active code below instead."));
+            return;
+        }
+
+        if (!pending.length) {
+            mount.appendChild(makeEmptyState("No pending requests right now."));
+            return;
+        }
+
+        pending.forEach((item) => {
+            const article = document.createElement("article");
+            article.className = "group-member-card tone-member";
+
+            const main = document.createElement("div");
+            main.className = "group-member-main";
+
+            const avatarShell = document.createElement("div");
+            avatarShell.className = "group-member-avatar-shell tone-member";
+
+            const avatar = document.createElement("img");
+            avatar.className = "group-member-avatar";
+            avatar.src = APP.getProfileImageUrl({ profile_image: item.profile_image });
+            avatar.alt = `${item.full_name || `User #${item.user_id}`} profile image`;
+            avatar.onerror = () => {
+                avatar.onerror = null;
+                avatar.src = APP.getDefaultProfileImage();
+            };
+
+            avatarShell.appendChild(avatar);
+
+            const copy = document.createElement("div");
+            copy.className = "group-member-copy";
+
+            const heading = document.createElement("div");
+            heading.className = "group-member-heading";
+
+            const title = document.createElement("h4");
+            title.className = "group-member-name";
+            title.textContent = item.full_name || `User #${item.user_id}`;
+
+            const badges = document.createElement("div");
+            badges.className = "badge-row";
+            badges.appendChild(createBadge("Pending", "warn"));
+            badges.appendChild(createBadge(`User #${item.user_id}`, "info"));
+
+            const meta = document.createElement("p");
+            meta.className = "group-member-meta";
+            meta.textContent = `Requested ${formatDate(item.requested_at)}`;
+
+            heading.appendChild(title);
+            heading.appendChild(badges);
+            copy.appendChild(heading);
+            copy.appendChild(meta);
+
+            main.appendChild(avatarShell);
+            main.appendChild(copy);
+            article.appendChild(main);
+
+            const actions = document.createElement("div");
+            actions.className = "group-member-actions";
+
+            if (permissions.canApprove) {
+                const approveBtn = document.createElement("button");
+                approveBtn.type = "button";
+                approveBtn.className = "member-action-btn primary";
+                approveBtn.innerHTML = `<i class="ti ti-check"></i><span>Accept</span>`;
+                approveBtn.addEventListener("click", async () => {
+                    setInlineButtonLoading(approveBtn, true, "Accepting...");
+                    try {
+                        await JoinRequestAPI.decideJoinRequest(item.id, "approve");
+                        APP.showToast("Request accepted", "success");
+                        await permissions.reload();
+                    } catch (err) {
+                        if (!handleAuthError(err)) {
+                            APP.showToast(err.message || "Failed to accept request.", "error");
+                        }
+                    } finally {
+                        setInlineButtonLoading(approveBtn, false);
+                    }
+                });
+                actions.appendChild(approveBtn);
+            }
+
+            if (permissions.canReject) {
+                const rejectBtn = document.createElement("button");
+                rejectBtn.type = "button";
+                rejectBtn.className = "member-action-btn danger";
+                rejectBtn.innerHTML = `<i class="ti ti-x"></i><span>Reject</span>`;
+                rejectBtn.addEventListener("click", async () => {
+                    setInlineButtonLoading(rejectBtn, true, "Rejecting...");
+                    try {
+                        await JoinRequestAPI.decideJoinRequest(item.id, "reject");
+                        APP.showToast("Request rejected", "success");
+                        await permissions.reload();
+                    } catch (err) {
+                        if (!handleAuthError(err)) {
+                            APP.showToast(err.message || "Failed to reject request.", "error");
+                        }
+                    } finally {
+                        setInlineButtonLoading(rejectBtn, false);
+                    }
+                });
+                actions.appendChild(rejectBtn);
+            }
+
+            article.appendChild(actions);
+            mount.appendChild(article);
+        });
+    }
+
+    function renderInvitePanel(group, invites, permissions) {
+        const panel = qs("#invite-code-panel");
+        const generateBtn = qs("#generate-code-btn");
+        const copyBtn = qs("#copy-code-btn");
+        const deactivateBtn = qs("#deactivate-code-btn");
+        const stateLabel = qs("#invite-panel-state");
+        const codeValue = qs("#invite-code-value");
+        const codeMeta = qs("#invite-code-meta");
+
+        const isHiddenPrivate = group.privacy === "private" && !group.visible;
+        show(panel, isHiddenPrivate);
+        if (!isHiddenPrivate) return;
+
+        const currentInvite = activeInvite(invites);
+        const hasActiveCode = Boolean(currentInvite);
+
+        text(stateLabel, hasActiveCode ? "Active code ready" : "No active code");
+        text(codeValue, hasActiveCode ? currentInvite.code : "No active code");
+        text(
+            codeMeta,
+            hasActiveCode
+                ? `Created ${formatDate(currentInvite.created_at)}${currentInvite.expires_at ? ` • Expires ${formatDate(currentInvite.expires_at)}` : " • No expiry"}`
+                : "Generate one reusable code for this hidden private group."
+        );
+
+        show(copyBtn, hasActiveCode);
+        show(deactivateBtn, hasActiveCode && permissions.canDeactivateCode);
+        if (generateBtn) generateBtn.disabled = hasActiveCode || !permissions.canGenerateCode;
+
+        if (generateBtn) {
+            generateBtn.onclick = async () => {
+                setInlineButtonLoading(generateBtn, true, "Generating...");
+                try {
+                    await InviteAPI.createInvite({ group_id: group.id });
+                    APP.showToast("Invite code generated", "success");
+                    await permissions.reload();
+                } catch (err) {
+                    if (!handleAuthError(err)) {
+                        APP.showToast(err.message || "Failed to generate code.", "error");
+                    }
+                } finally {
+                    setInlineButtonLoading(generateBtn, false);
+                }
+            };
+        }
+
+        if (copyBtn) {
+            copyBtn.onclick = () => {
+                if (currentInvite) copyToClipboard(currentInvite.code);
+            };
+        }
+
+        if (deactivateBtn) {
+            deactivateBtn.onclick = async () => {
+                if (!permissions.canDeactivateCode || !currentInvite) return;
+                setInlineButtonLoading(deactivateBtn, true, "Deactivating...");
+                try {
+                    await InviteAPI.deleteInvite(currentInvite.id);
+                    APP.showToast("Invite code deactivated", "success");
+                    await permissions.reload();
+                } catch (err) {
+                    if (!handleAuthError(err)) {
+                        APP.showToast(err.message || "Failed to deactivate code.", "error");
+                    }
+                } finally {
+                    setInlineButtonLoading(deactivateBtn, false);
+                }
+            };
+        }
+    }
+
+    async function initGroupReviewPage() {
+        const token = APP.requireAuthOrRedirect();
+        if (!token) return;
+
+        const groupId = Number(qparam("group_id") || "");
+        if (!groupId || groupId < 1) {
+            setBox("#admin-error", "Missing group_id. Open this page from a group workspace.");
+            return;
+        }
+
+        let profile;
+        try {
+            profile = await ensureWorkspaceProfile();
+            if (!profile) return;
+        } catch (err) {
+            setBox("#admin-error", err.message || "Failed to load your profile.");
+            return;
+        }
+
+        let currentGroup = null;
+        let currentRole = null;
+
+        const reload = async () => {
+            setBox("#admin-error", "");
+            setBox("#admin-success", "");
+            text(qs("#admin-info"), "Loading join review...");
+
+            try {
+                currentGroup = await safeFetchGroup(groupId);
+                currentRole = await myRole(groupId, profile.id).catch(() => null);
+
+                const isCreator = Number(currentGroup.created_by) === Number(profile.id);
+                const canApprove = isCreator || currentRole === "admin" || currentRole === "moderator";
+                const canReject = isCreator || currentRole === "admin";
+                const canGenerateCode = canApprove;
+                const canDeactivateCode = isCreator || currentRole === "admin";
+
+                applyGroupWorkspace(profile, currentGroup, currentRole, "Join Requests");
+                text(qs("#review-group-name"), currentGroup.name);
+                text(
+                    qs("#review-subtitle"),
+                    currentGroup.privacy === "public"
+                        ? "Public groups do not use join requests."
+                        : currentGroup.visible
+                            ? "Review incoming requests from visible private groups."
+                            : "Manage the active code used to join this hidden private group."
+                );
+                renderReviewBadges(currentGroup, currentRole, isCreator);
+
+                const requests = currentGroup.privacy === "private" && currentGroup.visible
+                    ? await JoinRequestAPI.listGroupJoinRequests(groupId, "")
+                    : [];
+                const invites = currentGroup.privacy === "private" && !currentGroup.visible && window.InviteAPI
+                    ? await InviteAPI.listInvites(groupId)
+                    : [];
+
+                renderRequestSummary(requests, activeInvite(invites), currentGroup);
+                renderRequestList(currentGroup, requests, { canApprove, canReject, reload });
+                renderInvitePanel(currentGroup, invites, { canGenerateCode, canDeactivateCode, reload });
+
+                text(
+                    qs("#admin-info"),
+                    currentGroup.privacy === "public"
+                        ? "Public groups skip join requests."
+                        : currentGroup.visible
+                        ? "Visible private group: moderators/admins can review join requests here."
+                            : canDeactivateCode
+                                ? "Hidden private group: generate, copy, or deactivate the single active invite code."
+                                : "Hidden private group: moderators can generate a code only when none is active."
+                );
+            } catch (err) {
+                if (handleAuthError(err)) return;
+                setBox("#admin-error", err.message || "Failed to load join review.");
+                empty(qs("#group-request-list"));
+                qs("#group-request-list")?.appendChild(makeEmptyState("Could not load this group review page."));
+                show(qs("#invite-code-panel"), false);
+            }
+        };
+
+        const backBtn = qs("#back-to-groups");
+        if (backBtn) {
+            backBtn.addEventListener("click", () => {
+                APP.navigate("../pages/my_groups.html");
+            });
+        }
+
+        const refreshBtn = qs("#refresh-page");
+        if (refreshBtn) {
+            refreshBtn.addEventListener("click", () => {
+                reload();
+            });
+        }
+
+        await reload();
+    }
+
+    function initMyRequestsPage() {
+        const token = APP.requireAuthOrRedirect();
+        if (!token) return;
+
         const backBtn = qs("#back-to-groups");
         if (backBtn) {
             backBtn.addEventListener("click", () => {
@@ -492,57 +652,7 @@
         if (refreshBtn) {
             refreshBtn.addEventListener("click", () => {
                 loadMyRequests();
-                if (lastReviewedGroupId) loadGroupRequests(lastReviewedGroupId);
             });
-        }
-
-        const loadReviewBtn = qs("#load-group-requests-btn");
-        if (loadReviewBtn) {
-            loadReviewBtn.addEventListener("click", () => {
-                const groupId = Number(qs("#admin_group_id").value);
-                loadGroupRequests(groupId);
-            });
-        }
-    }
-
-    function init() {
-        const token = APP.requireAuthOrRedirect();
-        if (!token) return;
-
-        wireButtons();
-
-        const groupIdFromUrl = Number(qparam("group_id") || "");
-        const groupIdInput = qs("#group_id");
-        const adminGroupIdInput = qs("#admin_group_id");
-
-        if (hasGroupReviewUI()) {
-            ensureWorkspaceProfile()
-                .then(async (profile) => {
-                    if (!profile) return;
-                    if (groupIdFromUrl && groupIdFromUrl > 0) {
-                        const group = await safeFetchGroup(groupIdFromUrl);
-                        const role = await myRole(groupIdFromUrl, profile.id).catch(() => null);
-                        applyGroupWorkspace(profile, group, role, "Join Requests");
-                    } else {
-                        mountWorkspaceMenu(profile);
-                    }
-                })
-                .catch((err) => {
-                    if (!handleAuthError(err)) {
-                        APP.showToast(err.message || "Failed to load workspace profile.", "error");
-                    }
-                });
-        }
-
-        if (groupIdFromUrl && groupIdFromUrl > 0) {
-            if (groupIdInput) groupIdInput.value = groupIdFromUrl;
-            if (adminGroupIdInput) {
-                adminGroupIdInput.value = groupIdFromUrl;
-                setBox("#admin-info", `Group #${groupIdFromUrl} loaded from URL.`);
-                loadGroupRequests(groupIdFromUrl);
-            }
-        } else if (adminGroupIdInput) {
-            loadGroupRequests(0);
         }
 
         const createForm = qs("#create-request-form");
@@ -550,18 +660,18 @@
             createForm.addEventListener("submit", handleCreateJoinRequest);
         }
 
+        const groupIdFromUrl = Number(qparam("group_id") || "");
+        const groupIdInput = qs("#group_id");
+        if (groupIdInput && groupIdFromUrl > 0) {
+            groupIdInput.value = groupIdFromUrl;
+        }
+
         loadMyRequests();
-        startAutoRefresh();
-
-        document.addEventListener("visibilitychange", () => {
-            if (!document.hidden) {
-                loadMyRequests();
-                if (lastReviewedGroupId) loadGroupRequests(lastReviewedGroupId);
-            }
-        });
-
-        window.addEventListener("beforeunload", stopAutoRefresh);
     }
 
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", () => {
+        const page = document.body.dataset.page || "";
+        if (page === "group_review") initGroupReviewPage();
+        if (page === "join_requests") initMyRequestsPage();
+    });
 })();

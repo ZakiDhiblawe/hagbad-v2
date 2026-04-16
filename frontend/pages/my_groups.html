@@ -105,6 +105,7 @@
                                 <h3>My Groups</h3>
                                 <p id="groups-intro">Groups you created or already joined.</p>
                             </div>
+                            <button id="open-join-code-modal" class="btn portal-btn-secondary" type="button">Join with Code</button>
                         </div>
 
                         <form id="groups-filter-form" class="group-filter-bar group-filter-bar-my" novalidate>
@@ -142,6 +143,36 @@
         </div>
     </div>
 
+    <div id="join-code-overlay" class="portal-modal-overlay" hidden></div>
+    <div id="join-code-modal" class="portal-modal" hidden>
+        <div class="portal-modal-shell join-code-modal-shell">
+            <div class="portal-modal-header">
+                <div>
+                    <h2>Join Group by Code</h2>
+                    <p>Paste the active code shared for a hidden private group to join it immediately.</p>
+                </div>
+                <button id="close-join-code-modal" class="portal-modal-close" type="button" aria-label="Close join code modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <div id="join-code-error" class="form-error" hidden></div>
+
+            <form id="join-code-form" novalidate>
+                <div class="field">
+                    <label for="join-group-code">Invite code</label>
+                    <input id="join-group-code" type="text" placeholder="Paste active invite code" autocomplete="off" />
+                    <p class="helper-text mb-0">Only active codes from hidden private groups can be used here.</p>
+                </div>
+
+                <div class="portal-modal-actions">
+                    <button id="join-code-cancel" class="btn btn-secondary" type="button">Cancel</button>
+                    <button id="join-code-submit" class="btn" type="submit">Join Group</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
     <script src="../assets/libs/jquery/dist/jquery.min.js"></script>
@@ -151,6 +182,7 @@
     <script src="../js/app.js" defer></script>
     <script src="../modules/user/user_api.js" defer></script>
     <script src="../modules/group/group_api.js" defer></script>
+    <script src="../modules/invite/invite_api.js" defer></script>
     <script src="../modules/group/group.js" defer></script>
 </body>
 </html>

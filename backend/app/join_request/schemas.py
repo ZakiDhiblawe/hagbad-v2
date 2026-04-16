@@ -17,6 +17,8 @@ class JoinRequestOut(BaseModel):
     id: int
     group_id: int
     user_id: int
+    full_name: str | None = None
+    profile_image: str | None = None
     status: JoinRequestStatus
     requested_at: datetime
     handled_by: int | None = None

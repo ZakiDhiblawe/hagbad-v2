@@ -46,16 +46,71 @@ def is_group_admin(db: Session, group_id: int, user_id: int) -> bool:
     return member is not None
 
 
-def require_group_admin_or_creator(db: Session, group: Group, user_id: int) -> None:
+def is_group_moderator(db: Session, group_id: int, user_id: int) -> bool:
+    member = (
+        db.query(GroupMember)
+        .filter(
+            GroupMember.group_id == group_id,
+            GroupMember.user_id == user_id,
+            GroupMember.role == GroupMemberRole.moderator,
+        )
+        .first()
+    )
+    return member is not None
+
+
+def can_approve_join_requests(db: Session, group: Group, user_id: int) -> bool:
     if is_group_creator(group, user_id):
-        return
+        return True
 
     if is_group_admin(db, group.id, user_id):
+        return True
+
+    return is_group_moderator(db, group.id, user_id)
+
+
+def can_reject_join_requests(db: Session, group: Group, user_id: int) -> bool:
+    if is_group_creator(group, user_id):
+        return True
+    return is_group_admin(db, group.id, user_id)
+
+
+def require_join_request_reviewer(db: Session, group: Group, user_id: int) -> None:
+    if can_approve_join_requests(db, group, user_id):
         return
 
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="Only group creator or admin can perform this action",
+        detail="Only group creator, admin, or moderator can review join requests",
+    )
+
+
+def serialize_join_request(
+    db: Session,
+    join_request: JoinRequest,
+    *,
+    full_name: str | None = None,
+    profile_image: str | None = None,
+) -> JoinRequestOut:
+    if full_name is None and profile_image is None:
+        user = (
+            db.query(User.full_name, User.profile_image)
+            .filter(User.id == join_request.user_id)
+            .first()
+        )
+        if user:
+            full_name = user.full_name
+            profile_image = user.profile_image
+
+    return JoinRequestOut(
+        id=join_request.id,
+        group_id=join_request.group_id,
+        user_id=join_request.user_id,
+        full_name=full_name or f"User #{join_request.user_id}",
+        profile_image=profile_image,
+        status=join_request.status,
+        requested_at=join_request.requested_at,
+        handled_by=join_request.handled_by,
     )
 
 
@@ -64,7 +119,7 @@ def create_join_request(
     payload: JoinRequestCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> JoinRequest:
+) -> JoinRequestOut:
     group = get_group_or_404(db, payload.group_id)
 
     if group.status != GroupStatus.active:
@@ -77,6 +132,12 @@ def create_join_request(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Join requests are only for private groups",
+        )
+
+    if not group.visible:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Join requests are unavailable for hidden groups",
         )
 
     already_member = (
@@ -125,20 +186,34 @@ def create_join_request(
         )
 
     db.refresh(join_request)
-    return join_request
+    return serialize_join_request(
+        db,
+        join_request,
+        full_name=current_user.full_name,
+        profile_image=current_user.profile_image,
+    )
 
 
 @router.get("/mine", response_model=list[JoinRequestOut])
 def list_my_join_requests(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> list[JoinRequest]:
-    return (
+) -> list[JoinRequestOut]:
+    rows = (
         db.query(JoinRequest)
         .filter(JoinRequest.user_id == current_user.id)
         .order_by(JoinRequest.requested_at.desc())
         .all()
     )
+    return [
+        serialize_join_request(
+            db,
+            join_request,
+            full_name=current_user.full_name,
+            profile_image=current_user.profile_image,
+        )
+        for join_request in rows
+    ]
 
 
 @router.get("/group/{group_id}", response_model=list[JoinRequestOut])
@@ -147,16 +222,31 @@ def list_group_join_requests(
     status_filter: JoinRequestStatus | None = Query(default=None, alias="status"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> list[JoinRequest]:
+) -> list[JoinRequestOut]:
     group = get_group_or_404(db, group_id)
-    require_group_admin_or_creator(db, group, current_user.id)
+    require_join_request_reviewer(db, group, current_user.id)
 
-    query = db.query(JoinRequest).filter(JoinRequest.group_id == group.id)
+    if group.privacy != GroupPrivacy.private or not group.visible:
+        return []
+
+    query = (
+        db.query(JoinRequest, User.full_name, User.profile_image)
+        .join(User, User.id == JoinRequest.user_id)
+        .filter(JoinRequest.group_id == group.id)
+    )
 
     if status_filter is not None:
         query = query.filter(JoinRequest.status == status_filter)
 
-    return query.order_by(JoinRequest.requested_at.desc()).all()
+    return [
+        serialize_join_request(
+            db,
+            join_request,
+            full_name=full_name,
+            profile_image=profile_image,
+        )
+        for join_request, full_name, profile_image in query.order_by(JoinRequest.requested_at.asc()).all()
+    ]
 
 
 @router.get("/managed", response_model=list[JoinRequestOut])
@@ -164,7 +254,7 @@ def list_managed_join_requests(
     status_filter: JoinRequestStatus | None = Query(default=None, alias="status"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> list[JoinRequest]:
+) -> list[JoinRequestOut]:
     managed_group_ids = [
         group_id
         for (group_id,) in (
@@ -173,13 +263,17 @@ def list_managed_join_requests(
                 GroupMember,
                 (GroupMember.group_id == Group.id)
                 & (GroupMember.user_id == current_user.id)
-                & (GroupMember.role == GroupMemberRole.admin),
+                & (GroupMember.role.in_([GroupMemberRole.admin, GroupMemberRole.moderator])),
             )
             .filter(
                 or_(
                     Group.created_by == current_user.id,
                     GroupMember.id.isnot(None),
                 )
+            )
+            .filter(
+                Group.privacy == GroupPrivacy.private,
+                Group.visible.is_(True),
             )
             .distinct()
             .all()
@@ -189,12 +283,24 @@ def list_managed_join_requests(
     if not managed_group_ids:
         return []
 
-    query = db.query(JoinRequest).filter(JoinRequest.group_id.in_(managed_group_ids))
+    query = (
+        db.query(JoinRequest, User.full_name, User.profile_image)
+        .join(User, User.id == JoinRequest.user_id)
+        .filter(JoinRequest.group_id.in_(managed_group_ids))
+    )
 
     if status_filter is not None:
         query = query.filter(JoinRequest.status == status_filter)
 
-    return query.order_by(JoinRequest.requested_at.desc()).all()
+    return [
+        serialize_join_request(
+            db,
+            join_request,
+            full_name=full_name,
+            profile_image=profile_image,
+        )
+        for join_request, full_name, profile_image in query.order_by(JoinRequest.requested_at.asc()).all()
+    ]
 
 
 @router.get("/{request_id}", response_model=JoinRequestOut)
@@ -202,12 +308,12 @@ def get_join_request(
     request_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> JoinRequest:
+) -> JoinRequestOut:
     join_request = get_join_request_or_404(db, request_id)
     group = get_group_or_404(db, join_request.group_id)
 
     is_owner = int(join_request.user_id) == int(current_user.id)
-    is_manager = is_group_creator(group, current_user.id) or is_group_admin(db, group.id, current_user.id)
+    is_manager = can_approve_join_requests(db, group, current_user.id)
 
     if not is_owner and not is_manager:
         raise HTTPException(
@@ -215,7 +321,7 @@ def get_join_request(
             detail="Not allowed to view this join request",
         )
 
-    return join_request
+    return serialize_join_request(db, join_request)
 
 
 @router.post("/{request_id}/decision", response_model=JoinRequestOut)
@@ -224,11 +330,18 @@ def decide_join_request(
     payload: JoinRequestDecision,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> JoinRequest:
+) -> JoinRequestOut:
     join_request = get_join_request_or_404(db, request_id)
     group = get_group_or_404(db, join_request.group_id)
 
-    require_group_admin_or_creator(db, group, current_user.id)
+    if payload.action == "approve":
+        require_join_request_reviewer(db, group, current_user.id)
+    else:
+        if not can_reject_join_requests(db, group, current_user.id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only group creator or admin can reject join requests",
+            )
 
     if join_request.status != JoinRequestStatus.pending:
         raise HTTPException(
@@ -241,7 +354,7 @@ def decide_join_request(
         join_request.handled_by = current_user.id
         db.commit()
         db.refresh(join_request)
-        return join_request
+        return serialize_join_request(db, join_request)
 
     # approve
     if group.status != GroupStatus.active:
@@ -284,7 +397,7 @@ def decide_join_request(
         )
 
     db.refresh(join_request)
-    return join_request
+    return serialize_join_request(db, join_request)
 
 
 @router.delete("/{request_id}", status_code=status.HTTP_204_NO_CONTENT)

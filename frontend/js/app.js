@@ -316,6 +316,42 @@
         }
     }
 
+    function ensureSidebarItem(sideNav, itemId, { href = "#", label = "", iconClass = "" } = {}) {
+        if (!sideNav) return null;
+
+        let item = resolveNode(`#${itemId}`);
+        if (!item) {
+            item = document.createElement("li");
+            item.className = "sidebar-item";
+            item.id = itemId;
+
+            const link = document.createElement("a");
+            link.className = "sidebar-link primary-hover-bg";
+            link.href = href;
+            link.setAttribute("aria-expanded", "false");
+
+            const icon = document.createElement("i");
+            icon.className = iconClass;
+
+            const span = document.createElement("span");
+            span.className = "hide-menu";
+            span.textContent = label;
+
+            link.appendChild(icon);
+            link.appendChild(span);
+            item.appendChild(link);
+            sideNav.appendChild(item);
+            return item;
+        }
+
+        const link = item.querySelector("a");
+        if (link) {
+            link.href = href;
+            updateSidebarLink(link, { label, iconClass });
+        }
+        return item;
+    }
+
     function applyGroupWorkspaceNav({
         groupId,
         activeKey = "",
@@ -323,6 +359,8 @@
         pageLabel = "Group workspace",
         canUpdateGroup = false,
         canCreateCycle = false,
+        canAccessAdministration = false,
+        showJoinRequests = true,
     } = {}) {
         if (!groupId) return null;
 
@@ -338,6 +376,7 @@
             update: profileHref,
             requests: `group_review.html?group_id=${groupId}`,
             settings: `group_settings.html?group_id=${groupId}`,
+            back_groups: "my_groups.html",
             invites: `invites.html?group_id=${groupId}`,
             add_cycle: `cycles.html?group_id=${groupId}&open=create`,
         };
@@ -380,6 +419,11 @@
         const caps = sideNav ? Array.from(sideNav.querySelectorAll(".nav-small-cap")) : [];
         const mainCap = caps.find((node) => node.id !== "group-admin-cap") || null;
         const adminCap = resolveNode("#group-admin-cap");
+        const backGroupsItem = ensureSidebarItem(sideNav, "group-nav-back-groups-item", {
+            href: links.back_groups,
+            label: "Back to Groups",
+            iconClass: "ti ti-arrow-left",
+        });
         if (mainCap) {
             const capLabel = mainCap.querySelector(".hide-menu") || mainCap;
             capLabel.textContent = "Main";
@@ -387,7 +431,7 @@
         if (adminCap) {
             const capLabel = adminCap.querySelector(".hide-menu") || adminCap;
             capLabel.textContent = "Administration";
-            adminCap.hidden = false;
+            adminCap.hidden = !canAccessAdministration;
         }
 
         const dashboardItem = findClosestListItem("#group-nav-dashboard");
@@ -399,11 +443,12 @@
         const invitesItem = findClosestListItem("#group-nav-invites");
         const addCycleItem = resolveNode("#group-nav-add-cycle-item") || findClosestListItem("#group-nav-add-cycle");
 
-        if (profileItem) profileItem.hidden = false;
-        if (requestsItem) requestsItem.hidden = false;
-        if (settingsItem) settingsItem.hidden = false;
+        if (profileItem) profileItem.hidden = !canAccessAdministration;
+        if (requestsItem) requestsItem.hidden = !canAccessAdministration || !showJoinRequests;
+        if (settingsItem) settingsItem.hidden = !canAccessAdministration;
         if (invitesItem) invitesItem.hidden = true;
         if (addCycleItem) addCycleItem.hidden = true;
+        if (backGroupsItem) backGroupsItem.hidden = false;
 
         if (sideNav) {
             [
@@ -417,6 +462,7 @@
                 settingsItem,
                 invitesItem,
                 addCycleItem,
+                backGroupsItem,
             ].filter(Boolean).forEach((node) => sideNav.appendChild(node));
         }
 

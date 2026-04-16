@@ -18,6 +18,9 @@
       pageTitle,
       canUpdateGroup: Number(group.created_by) === Number(profile.id),
       canCreateCycle: Number(group.created_by) === Number(profile.id) || role === "admin",
+      canAccessAdministration:
+        Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator",
+      showJoinRequests: group.privacy !== "public",
     });
   }
 

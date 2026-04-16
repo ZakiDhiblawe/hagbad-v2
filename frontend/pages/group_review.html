@@ -60,7 +60,7 @@
             </li>
             <li class="sidebar-item">
               <a id="group-nav-requests" class="sidebar-link primary-hover-bg active" href="#" aria-expanded="false">
-                <i class="ti ti-user-question"></i>
+                <i class="ti ti-user-plus"></i>
                 <span class="hide-menu">Join Requests</span>
               </a>
             </li>
@@ -107,52 +107,95 @@
       </header>
 
       <div class="container-fluid py-4">
-        <section class="dashboard-panel card workspace-legacy-card">
+        <div class="workspace-legacy-stack group-review-page">
+        <section class="dashboard-panel card members-overview-panel">
           <div class="card-body">
-            <div class="workspace-legacy-intro">
+            <div class="group-inline-meta members-page-heading">
               <div>
-                <h2>Review Membership Requests</h2>
-                <p>Approve or reject incoming requests for the current group workspace.</p>
+                <h2 id="review-group-name">Loading join requests...</h2>
+                <p id="review-subtitle">Preparing the membership review workspace for this group.</p>
               </div>
-              <div class="btn-row">
+              <div class="members-header-actions">
                 <button id="back-to-groups" class="btn btn-secondary" type="button">Back to groups</button>
                 <button id="refresh-page" class="btn btn-secondary" type="button">Refresh</button>
               </div>
             </div>
 
-            <div id="admin-error" class="alert error" hidden></div>
-            <div id="admin-success" class="alert success" hidden></div>
-            <div id="admin-info" class="alert info" hidden></div>
+            <div id="review-badges" class="group-context-badges" aria-live="polite"></div>
 
-            <div class="workspace-form-grid cols-2">
-              <div class="field">
-                <label for="admin_group_id">Group ID to review</label>
-                <input id="admin_group_id" type="number" min="1" placeholder="Enter group id" />
-                <div class="helper-text">This is filled automatically when you open review from a group workspace.</div>
-              </div>
+            <div id="admin-error" class="form-error" hidden></div>
+            <div id="admin-success" class="form-success" hidden></div>
+            <div id="admin-info" class="dashboard-note members-status" aria-live="polite"></div>
 
-              <div class="field">
-                <label for="status_filter">Filter by status</label>
-                <select id="status_filter">
-                  <option value="">All</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
+            <div class="members-summary-grid" aria-label="Join request summary">
+              <article class="members-summary-card total">
+                <span>Total requests</span>
+                <strong id="summary-total-requests">0</strong>
+                <p>All requests recorded for this group.</p>
+              </article>
+              <article class="members-summary-card admin">
+                <span>Pending</span>
+                <strong id="summary-pending-requests">0</strong>
+                <p>Waiting for moderation or admin review.</p>
+              </article>
+              <article class="members-summary-card moderator">
+                <span>Approved</span>
+                <strong id="summary-approved-requests">0</strong>
+                <p>Requests that already became group members.</p>
+              </article>
+              <article class="members-summary-card member">
+                <span>Active code</span>
+                <strong id="summary-active-code">None</strong>
+                <p id="summary-mode-note">Join-request access depends on group privacy and visibility.</p>
+              </article>
             </div>
-
-            <div class="btn-row mt-3">
-              <button id="load-group-requests-btn" class="btn" type="button">Load Requests</button>
-            </div>
-
-            <div class="muted-box mt-3">
-              Approving a request adds the user into group members as <strong>member</strong>.
-            </div>
-
-            <div id="group-request-list" class="request-list mt-3"></div>
           </div>
         </section>
+
+        <section id="request-list-panel" class="dashboard-panel card member-role-panel">
+          <div class="card-body">
+            <div class="member-role-header">
+              <div>
+                <h3>Pending Requests</h3>
+                <p id="request-panel-copy">Approve or reject incoming requests from discoverable private groups.</p>
+              </div>
+              <span id="pending-count-label" class="member-section-count">0 pending</span>
+            </div>
+            <div id="group-request-list" class="member-role-list" aria-label="Group join requests"></div>
+          </div>
+        </section>
+
+        <section id="invite-code-panel" class="dashboard-panel card member-role-panel" hidden>
+          <div class="card-body">
+            <div class="member-role-header">
+              <div>
+                <h3>Active Invite Code</h3>
+                <p id="invite-panel-copy">Hidden private groups use one active code instead of join requests.</p>
+              </div>
+              <span id="invite-panel-state" class="member-section-count">No active code</span>
+            </div>
+
+            <div id="invite-code-card" class="invite-code-card">
+              <div class="invite-code-copy">
+                <span class="invite-code-label">Current code</span>
+                <strong id="invite-code-value">No active code</strong>
+                <p id="invite-code-meta">Generate a new code when the current one is inactive.</p>
+              </div>
+              <div class="group-member-actions invite-code-actions">
+                <button id="generate-code-btn" class="member-action-btn primary" type="button">
+                  <i class="ti ti-plus"></i><span>Generate code</span>
+                </button>
+                <button id="copy-code-btn" class="member-action-btn secondary" type="button" hidden>
+                  <i class="ti ti-copy"></i><span>Copy</span>
+                </button>
+                <button id="deactivate-code-btn" class="member-action-btn danger" type="button" hidden>
+                  <i class="ti ti-power"></i><span>Deactivate</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+        </div>
       </div>
     </div>
   </div>
@@ -165,6 +208,7 @@
   <script src="../assets/js/sidebarmenu.js"></script>
   <script src="../js/app.js" defer></script>
   <script src="../modules/join_request/join_request_api.js" defer></script>
+  <script src="../modules/invite/invite_api.js" defer></script>
   <script src="../modules/join_request/join_request.js" defer></script>
 </body>
 </html>

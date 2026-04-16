@@ -3,6 +3,7 @@
 
   function qs(sel) { return document.querySelector(sel); }
   function text(el, value) { if (el) el.textContent = value; }
+  function show(el, yes) { if (el) el.hidden = !yes; }
 
   function getGroupIdFromUrl() {
     const u = new URL(window.location.href);
@@ -235,6 +236,75 @@
     mount.appendChild(empty);
   }
 
+  function bindJoinCodeModal(onJoined) {
+    const openBtn = qs("#open-join-code-modal");
+    const overlay = qs("#join-code-overlay");
+    const modal = qs("#join-code-modal");
+    const closeBtn = qs("#close-join-code-modal");
+    const cancelBtn = qs("#join-code-cancel");
+    const form = qs("#join-code-form");
+    const input = qs("#join-group-code");
+    const submitBtn = qs("#join-code-submit");
+    const errorBox = qs("#join-code-error");
+
+    if (!openBtn || !overlay || !modal || !form || !window.InviteAPI) return;
+
+    function setError(message) {
+      if (!errorBox) return;
+      errorBox.hidden = !message;
+      errorBox.textContent = message || "";
+    }
+
+    function openModal() {
+      setError("");
+      overlay.hidden = false;
+      modal.hidden = false;
+      if (input) input.focus();
+    }
+
+    function closeModal() {
+      overlay.hidden = true;
+      modal.hidden = true;
+      form.reset();
+      setError("");
+    }
+
+    openBtn.addEventListener("click", openModal);
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+    overlay.addEventListener("click", closeModal);
+
+    document.addEventListener("keydown", (event) => {
+      if (!modal.hidden && event.key === "Escape") closeModal();
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const code = input.value.trim();
+      setError("");
+
+      if (!code) {
+        setError("Please paste an active invite code.");
+        return;
+      }
+
+      window.APP.setButtonLoading(submitBtn, true, "Joining...");
+      try {
+        const result = await window.InviteAPI.redeemInvite(code);
+        window.APP.showToast("Joined group successfully", "success");
+        closeModal();
+        if (typeof onJoined === "function") {
+          await onJoined(result);
+        }
+      } catch (err) {
+        setError(err.message || "Failed to join with this code.");
+        window.APP.showToast(err.message || "Failed to join with this code.", "error");
+      } finally {
+        window.APP.setButtonLoading(submitBtn, false);
+      }
+    });
+  }
+
   async function initGroupListPage(mode) {
     const profile = await ensureProfile();
     if (!profile) return;
@@ -435,6 +505,13 @@
         setStatus(err.message || "Failed to load groups.");
         window.APP.showToast(err.message || "Failed to load groups.", "error");
       }
+    }
+
+    if (mode === "mine") {
+      bindJoinCodeModal(async () => {
+        page = 1;
+        await loadGroups();
+      });
     }
 
     const debouncedLoadGroups = debounce(() => {
@@ -899,12 +976,15 @@
 
       const activeCycles = cycles.filter((cycle) => cycle.status === "active");
       const canCreateCycle = isCreator || membershipRole === "admin";
+      const showJoinRequests = group.privacy !== "public";
       const workspaceLinks = window.APP.applyGroupWorkspaceNav({
         groupId: id,
         activeKey: isEditMode ? "update" : "dashboard",
         pageTitle: isEditMode ? "Update Group" : "Dashboard",
         canUpdateGroup: isCreator,
         canCreateCycle,
+        canAccessAdministration: isCreator || membershipRole === "admin" || membershipRole === "moderator",
+        showJoinRequests,
       }) || {};
 
       setHref("#quick-settings", workspaceLinks.settings || `group_settings.html?group_id=${id}`);
@@ -912,13 +992,25 @@
       setHref("#quick-requests", workspaceLinks.requests || `group_review.html?group_id=${id}`);
       setHref("#quick-invites", workspaceLinks.invites || `invites.html?group_id=${id}`);
       setHref("#open-cycles", workspaceLinks.cycles || `cycles.html?group_id=${id}`);
+      show(qs("#quick-requests"), showJoinRequests);
+      show(qs("#quick-invites"), false);
 
       setSummaryValue("#summary-active-cycles", String(activeCycles.length));
       setSummaryValue("#summary-total-members", members.length ? String(members.length) : (isCreator ? "1" : "-"));
       setSummaryValue("#summary-total-payments", String(totalPayments));
       setSummaryValue("#summary-total-payouts", String(totalPayouts));
-      setSummaryValue("#summary-join-requests", pendingJoinRequests === null ? "Locked" : String(pendingJoinRequests));
-      setSummaryValue("#summary-invites", activeInviteCount === null ? "Locked" : String(activeInviteCount));
+      setSummaryValue(
+        "#summary-join-requests",
+        showJoinRequests
+          ? (pendingJoinRequests === null ? "Locked" : String(pendingJoinRequests))
+          : "N/A"
+      );
+      setSummaryValue(
+        "#summary-invites",
+        group.privacy === "private" && !group.visible
+          ? (activeInviteCount === null ? "Locked" : String(activeInviteCount))
+          : "N/A"
+      );
 
       renderOverview(group, membershipRole);
     }
