@@ -60,5 +60,13 @@
     });
   }
 
-  window.GroupMemberAPI = { listMembers, addMember, updateMember, deleteMember };
+  async function leaveGroup(group_id) {
+    const qs = new URLSearchParams({ group_id: String(group_id) });
+    return await request(`/group-members/leave?${qs.toString()}`, {
+      method: "POST",
+      headers: { Accept: "application/json", ...authHeaders() },
+    });
+  }
+
+  window.GroupMemberAPI = { listMembers, addMember, updateMember, deleteMember, leaveGroup };
 })();

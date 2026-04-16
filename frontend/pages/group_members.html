@@ -61,7 +61,7 @@
             </li>
             <li class="sidebar-item">
               <a id="group-nav-requests" class="sidebar-link primary-hover-bg" href="#" aria-expanded="false">
-                <i class="ti ti-user-question"></i>
+                <i class="ti ti-user-plus"></i>
                 <span class="hide-menu">Join Requests</span>
               </a>
             </li>
@@ -108,43 +108,86 @@
       </header>
 
       <div class="container-fluid py-4">
-        <div class="workspace-legacy-stack">
-          <section class="dashboard-panel card">
+        <div class="workspace-legacy-stack group-members-page">
+          <section class="dashboard-panel card members-overview-panel">
             <div class="card-body">
-              <div class="workspace-legacy-intro">
+              <div class="group-inline-meta members-page-heading">
                 <div>
                   <h2 id="group-name">Loading members...</h2>
-                  <p id="group-subtitle">Review roles, joined members, and who can manage this group.</p>
+                  <p id="group-subtitle">Review roles, manage access, and keep your group leadership organized.</p>
                 </div>
-                <span id="group-badges" class="status-chip status-loading">Loading access</span>
+                <div class="members-header-actions">
+                  <button id="open-add" class="btn" type="button" hidden>Add member</button>
+                  <button id="exit-group" class="btn btn-secondary" type="button">Exit group</button>
+                </div>
               </div>
+
+              <div id="group-badges" class="group-context-badges" aria-live="polite"></div>
 
               <div id="page-error" class="form-error" role="alert" hidden></div>
+              <div id="list-status" class="dashboard-note members-status" aria-live="polite"></div>
 
-              <div class="toolbar" role="group" aria-label="Member actions">
-                <div class="toolbar-left">
-                  <label for="role-filter" class="hint" style="font-weight:700;">Role</label>
-                  <select id="role-filter" class="select" aria-label="Role filter">
-                    <option value="">All</option>
-                    <option value="admin">Admin</option>
-                    <option value="moderator">Moderator</option>
-                    <option value="member">Member</option>
-                  </select>
-                </div>
-                <div class="toolbar-right">
-                  <button id="refresh" class="btn btn-secondary" type="button">Refresh</button>
-                  <button id="open-add" class="btn" type="button">Add member</button>
-                </div>
+              <div class="members-summary-grid" aria-label="Membership summary">
+                <article class="members-summary-card total">
+                  <span>Total members</span>
+                  <strong id="summary-total">0</strong>
+                  <p>Everyone currently inside this group workspace.</p>
+                </article>
+                <article class="members-summary-card admin">
+                  <span>Admins</span>
+                  <strong id="summary-admins">0</strong>
+                  <p>Full control over members, cycles, and group administration.</p>
+                </article>
+                <article class="members-summary-card moderator">
+                  <span>Moderators</span>
+                  <strong id="summary-moderators">0</strong>
+                  <p>Trusted members helping manage day-to-day group work.</p>
+                </article>
+                <article class="members-summary-card member">
+                  <span>Ordinary members</span>
+                  <strong id="summary-members">0</strong>
+                  <p>Regular participants with standard group access.</p>
+                </article>
               </div>
+            </div>
+          </section>
 
-              <div id="list-status" class="dashboard-note mb-3" aria-live="polite"></div>
-              <ul id="members-list" class="list" aria-label="Members"></ul>
-
-              <div class="pager" aria-label="Pagination">
-                <button id="prev" class="btn btn-secondary" type="button">Prev</button>
-                <span id="page-label" class="dashboard-note">Page 1</span>
-                <button id="next" class="btn btn-secondary" type="button">Next</button>
+          <section class="dashboard-panel card member-role-panel">
+            <div class="card-body">
+              <div class="member-role-header">
+                <div>
+                  <h3>Admins</h3>
+                  <p>Leaders with full control over the group and member access.</p>
+                </div>
+                <span id="admins-count" class="member-section-count">0 admins</span>
               </div>
+              <div id="admins-list" class="member-role-list" aria-label="Admin members"></div>
+            </div>
+          </section>
+
+          <section class="dashboard-panel card member-role-panel">
+            <div class="card-body">
+              <div class="member-role-header">
+                <div>
+                  <h3>Moderators</h3>
+                  <p>Supporting members who can help manage activity inside the group.</p>
+                </div>
+                <span id="moderators-count" class="member-section-count">0 moderators</span>
+              </div>
+              <div id="moderators-list" class="member-role-list" aria-label="Moderator members"></div>
+            </div>
+          </section>
+
+          <section class="dashboard-panel card member-role-panel">
+            <div class="card-body">
+              <div class="member-role-header">
+                <div>
+                  <h3>Ordinary Members</h3>
+                  <p>Participants with standard access inside this group.</p>
+                </div>
+                <span id="members-count" class="member-section-count">0 members</span>
+              </div>
+              <div id="members-list" class="member-role-list" aria-label="Ordinary members"></div>
             </div>
           </section>
         </div>

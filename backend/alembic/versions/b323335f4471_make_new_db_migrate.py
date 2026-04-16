@@ -1,8 +1,8 @@
-"""empty message
+"""make new db migrate
 
-Revision ID: 296d186249f3
+Revision ID: b323335f4471
 Revises: 
-Create Date: 2026-04-11 16:19:54.026920
+Create Date: 2026-04-16 22:05:15.592828
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '296d186249f3'
+revision: str = 'b323335f4471'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -26,6 +26,9 @@ def upgrade() -> None:
     sa.Column('full_name', sa.String(length=120), nullable=False),
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('phone', sa.String(length=30), nullable=True),
+    sa.Column('profile_image', sa.String(length=255), nullable=True),
+    sa.Column('session_hours', sa.Integer(), nullable=True),
+    sa.Column('active_session_id', sa.String(length=64), nullable=True),
     sa.Column('password', sa.String(length=255), nullable=False),
     sa.Column('status', sa.Enum('active', 'banned', name='user_status'), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
@@ -37,6 +40,9 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=120), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('visible', sa.Boolean(), nullable=False),
+    sa.Column('group_image', sa.String(length=255), nullable=True),
+    sa.Column('cover_image', sa.String(length=255), nullable=True),
     sa.Column('privacy', sa.Enum('public', 'private', name='group_privacy'), nullable=False),
     sa.Column('created_by', sa.Integer(), nullable=False),
     sa.Column('status', sa.Enum('active', 'closed', name='group_status'), nullable=False),

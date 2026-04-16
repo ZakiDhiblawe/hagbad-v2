@@ -25,3 +25,5 @@ class GroupMemberOut(BaseModel):
     user_id: int
     role: GroupMemberRole
     joined_at: datetime
+    full_name: str | None = None
+    profile_image: str | None = None

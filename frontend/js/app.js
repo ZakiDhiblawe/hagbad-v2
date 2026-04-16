@@ -296,6 +296,26 @@
         node.hidden = !!hidden;
     }
 
+    function findClosestListItem(target) {
+        const node = resolveNode(target);
+        return node ? node.closest("li") : null;
+    }
+
+    function updateSidebarLink(target, { label, iconClass } = {}) {
+        const node = resolveNode(target);
+        if (!node) return;
+
+        if (iconClass) {
+            const icon = node.querySelector("i");
+            if (icon) icon.className = iconClass;
+        }
+
+        if (label) {
+            const labelNode = node.querySelector(".hide-menu") || node.querySelector("span");
+            if (labelNode) labelNode.textContent = label;
+        }
+    }
+
     function applyGroupWorkspaceNav({
         groupId,
         activeKey = "",
@@ -306,33 +326,105 @@
     } = {}) {
         if (!groupId) return null;
 
+        const normalizedActiveKey = activeKey === "profile" ? "update" : activeKey;
+        const profileHref = canUpdateGroup
+            ? `group_detail.html?id=${groupId}&mode=edit`
+            : `group_detail.html?id=${groupId}`;
+
         const links = {
             dashboard: `group_detail.html?id=${groupId}`,
             cycles: `cycles.html?group_id=${groupId}`,
-            settings: `group_settings.html?group_id=${groupId}`,
             members: `group_members.html?group_id=${groupId}`,
+            update: profileHref,
             requests: `group_review.html?group_id=${groupId}`,
+            settings: `group_settings.html?group_id=${groupId}`,
             invites: `invites.html?group_id=${groupId}`,
-            update: `group_detail.html?id=${groupId}&mode=edit`,
             add_cycle: `cycles.html?group_id=${groupId}&open=create`,
         };
 
         const navSelectors = {
             dashboard: "#group-nav-dashboard",
             cycles: "#group-nav-cycles",
-            settings: "#group-nav-settings",
             members: "#group-nav-members",
-            requests: "#group-nav-requests",
-            invites: "#group-nav-invites",
             update: "#group-nav-update",
-            add_cycle: "#group-nav-add-cycle",
+            requests: "#group-nav-requests",
+            settings: "#group-nav-settings",
         };
+
+        updateSidebarLink("#group-nav-dashboard", {
+            label: "Dashboard",
+            iconClass: "ti ti-layout-dashboard",
+        });
+        updateSidebarLink("#group-nav-cycles", {
+            label: "Cycle",
+            iconClass: "ti ti-refresh",
+        });
+        updateSidebarLink("#group-nav-members", {
+            label: "Members",
+            iconClass: "ti ti-users",
+        });
+        updateSidebarLink("#group-nav-update", {
+            label: "Group Profile",
+            iconClass: "ti ti-id-badge",
+        });
+        updateSidebarLink("#group-nav-requests", {
+            label: "Join Request",
+            iconClass: "ti ti-user-plus",
+        });
+        updateSidebarLink("#group-nav-settings", {
+            label: "Setting",
+            iconClass: "ti ti-adjustments-horizontal",
+        });
+
+        const sideNav = resolveNode("#sidebarnav");
+        const caps = sideNav ? Array.from(sideNav.querySelectorAll(".nav-small-cap")) : [];
+        const mainCap = caps.find((node) => node.id !== "group-admin-cap") || null;
+        const adminCap = resolveNode("#group-admin-cap");
+        if (mainCap) {
+            const capLabel = mainCap.querySelector(".hide-menu") || mainCap;
+            capLabel.textContent = "Main";
+        }
+        if (adminCap) {
+            const capLabel = adminCap.querySelector(".hide-menu") || adminCap;
+            capLabel.textContent = "Administration";
+            adminCap.hidden = false;
+        }
+
+        const dashboardItem = findClosestListItem("#group-nav-dashboard");
+        const cyclesItem = findClosestListItem("#group-nav-cycles");
+        const membersItem = findClosestListItem("#group-nav-members");
+        const profileItem = resolveNode("#group-nav-update-item") || findClosestListItem("#group-nav-update");
+        const requestsItem = findClosestListItem("#group-nav-requests");
+        const settingsItem = findClosestListItem("#group-nav-settings");
+        const invitesItem = findClosestListItem("#group-nav-invites");
+        const addCycleItem = resolveNode("#group-nav-add-cycle-item") || findClosestListItem("#group-nav-add-cycle");
+
+        if (profileItem) profileItem.hidden = false;
+        if (requestsItem) requestsItem.hidden = false;
+        if (settingsItem) settingsItem.hidden = false;
+        if (invitesItem) invitesItem.hidden = true;
+        if (addCycleItem) addCycleItem.hidden = true;
+
+        if (sideNav) {
+            [
+                mainCap,
+                dashboardItem,
+                cyclesItem,
+                membersItem,
+                adminCap,
+                profileItem,
+                requestsItem,
+                settingsItem,
+                invitesItem,
+                addCycleItem,
+            ].filter(Boolean).forEach((node) => sideNav.appendChild(node));
+        }
 
         Object.entries(navSelectors).forEach(([key, selector]) => {
             const node = resolveNode(selector);
             if (!node) return;
             setHref(node, links[key]);
-            const isActive = key === activeKey;
+            const isActive = key === normalizedActiveKey;
             node.classList.toggle("active", isActive);
             if (isActive) {
                 node.setAttribute("aria-current", "page");
@@ -340,14 +432,6 @@
                 node.removeAttribute("aria-current");
             }
         });
-
-        const updateItem = resolveNode("#group-nav-update-item");
-        const addCycleItem = resolveNode("#group-nav-add-cycle-item");
-        const adminCap = resolveNode("#group-admin-cap");
-
-        if (updateItem) updateItem.hidden = !canUpdateGroup;
-        if (addCycleItem) addCycleItem.hidden = !canCreateCycle;
-        if (adminCap) adminCap.hidden = !(canUpdateGroup || canCreateCycle);
 
         setHref("#group-brand-link", links.dashboard);
         setTextContent("#page-title-label", pageLabel);
