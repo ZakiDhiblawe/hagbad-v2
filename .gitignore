@@ -7,6 +7,7 @@ __pycache__/
 *.pyd
 *.db
 
+alembic/versions/
 alembic/versions/__pycache__/
 .env
 
