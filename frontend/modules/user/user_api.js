@@ -44,13 +44,12 @@
     }
 
     async function request(path, options = {}) {
-        const url = `${window.APP.getApiBase()}${path}`;
+        const url = window.APP.buildApiUrl(path);
 
         let response;
         try {
             response = await fetch(url, options);
         } catch {
-            // Browser treats CORS-blocked responses and some server crashes as “network errors”. citeturn0search9
             throw {
                 status: 0,
                 message:
@@ -82,7 +81,6 @@
     }
 
     async function loginUser(email, password) {
-        // OAuth2 password flow expects form fields "username" and "password". citeturn0search24turn1search5
         const body = new URLSearchParams({ username: email, password }).toString();
 
         return await request("/login", {

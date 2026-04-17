@@ -11,7 +11,7 @@
     }
 
     async function request(path, options = {}) {
-        const url = `${APP.getApiBase()}${path}`;
+        const url = APP.buildApiUrl(path);
         let res;
 
         try {

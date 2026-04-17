@@ -10,6 +10,7 @@ __pycache__/
 alembic/versions/
 alembic/versions/__pycache__/
 .env
+frontend/js/config.local.js
 
 # Virtual env
 venv/

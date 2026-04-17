@@ -29,7 +29,7 @@
   }
 
   async function request(path, options = {}) {
-    const url = `${APP.getApiBase()}${path}`;
+    const url = APP.buildApiUrl(path);
     let res;
     try { res = await fetch(url, options); }
     catch { throw { status: 0, message: "Network/CORS error. Check backend." }; }

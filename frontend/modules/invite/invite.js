@@ -59,7 +59,7 @@
     }
 
     async function safeFetchGroup(groupId) {
-        const res = await fetch(`${APP.getApiBase()}/groups/${groupId}`, {
+        const res = await fetch(APP.buildApiUrl(`/groups/${groupId}`), {
             headers: {
                 Accept: "application/json",
                 Authorization: `Bearer ${APP.getToken()}`,
@@ -77,7 +77,7 @@
     async function myRole(groupId, myId) {
         for (let page = 1; page <= 25; page++) {
             const params = new URLSearchParams({ group_id: String(groupId), page: String(page), size: "100" });
-            const res = await fetch(`${APP.getApiBase()}/group-members/?${params.toString()}`, {
+            const res = await fetch(APP.buildApiUrl(`/group-members/?${params.toString()}`), {
                 headers: {
                     Accept: "application/json",
                     Authorization: `Bearer ${APP.getToken()}`,

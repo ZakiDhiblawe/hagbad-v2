@@ -4,7 +4,7 @@
         if (!status) return;
 
         try {
-            const res = await fetch(`${window.APP.getApiBase()}/`);
+            const res = await fetch(window.APP.buildApiUrl("/"));
             if (!res.ok) throw new Error("server error");
             status.textContent = "Backend connected";
             status.className = "status-chip status-ok";

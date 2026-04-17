@@ -65,7 +65,7 @@
   }
 
   async function fetchGroup(groupId) {
-    const res = await fetch(`${APP.getApiBase()}/groups/${groupId}`, {
+    const res = await fetch(APP.buildApiUrl(`/groups/${groupId}`), {
       headers: { Accept: "application/json", Authorization: `Bearer ${APP.getToken()}` },
     });
     const data = await res.json().catch(() => null);

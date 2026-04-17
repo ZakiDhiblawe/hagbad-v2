@@ -15,10 +15,17 @@
     }
 
     function getApiBase() {
-        // Optional override: <meta name="api-base" content="http://localhost:8000">
+        if (window.HAGBAD_CONFIG && typeof window.HAGBAD_CONFIG.apiBaseUrl === "string") {
+            return window.HAGBAD_CONFIG.apiBaseUrl.trim();
+        }
+
+        // Legacy fallback: <meta name="api-base" content="http://localhost:8000">
         const meta = document.querySelector('meta[name="api-base"]');
-        const fromMeta = meta && meta.content ? meta.content.trim() : "";
-        return fromMeta || DEFAULT_API_BASE;
+        if (meta && typeof meta.content === "string") {
+            return meta.content.trim();
+        }
+
+        return DEFAULT_API_BASE;
     }
 
     function buildApiUrl(path) {
