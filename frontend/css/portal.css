@@ -1425,6 +1425,21 @@ body.portal-body {
     font-weight: 800;
 }
 
+.member-section-count.success {
+    color: #0f8d68;
+    background: rgba(15, 141, 104, 0.1);
+}
+
+.member-section-count.warn {
+    color: #a56800;
+    background: rgba(255, 193, 7, 0.14);
+}
+
+.member-section-count.neutral {
+    color: #667991;
+    background: rgba(16, 35, 63, 0.07);
+}
+
 .member-role-list {
     display: grid;
     gap: 0.9rem;
@@ -1645,6 +1660,271 @@ body.portal-body {
 
 .join-code-modal-shell {
     width: min(32rem, 100%);
+}
+
+.group-settings-page {
+    gap: 1.35rem;
+}
+
+.group-settings-hero-panel {
+    overflow: hidden;
+    border: 1px solid rgba(15, 108, 253, 0.08);
+    background:
+        radial-gradient(circle at top right, rgba(111, 177, 255, 0.28), transparent 34%),
+        radial-gradient(circle at left center, rgba(15, 108, 253, 0.12), transparent 32%),
+        linear-gradient(135deg, #fafdff 0%, #f2f8ff 42%, #eef5ff 100%);
+}
+
+.group-settings-hero-panel .card-body {
+    position: relative;
+    padding: 1.6rem;
+}
+
+.group-settings-hero-head {
+    align-items: flex-start;
+}
+
+.group-settings-hero-copy {
+    max-width: 42rem;
+}
+
+.group-settings-kicker {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.42rem 0.8rem;
+    margin-bottom: 0.8rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.8);
+    color: var(--portal-brand);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.group-settings-summary-grid {
+    margin-top: 1.5rem;
+}
+
+.group-settings-summary-card {
+    position: relative;
+    overflow: hidden;
+    border-color: rgba(15, 108, 253, 0.08);
+    box-shadow: 0 14px 28px rgba(15, 39, 74, 0.06);
+}
+
+.group-settings-summary-card::after {
+    content: "";
+    position: absolute;
+    inset: auto 1rem 0.85rem auto;
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.32);
+    filter: blur(4px);
+    pointer-events: none;
+}
+
+.group-settings-summary-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.group-settings-summary-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.65rem;
+    height: 2.65rem;
+    border-radius: 1rem;
+    color: var(--portal-brand);
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 10px 18px rgba(15, 39, 74, 0.08);
+    font-size: 1.08rem;
+}
+
+.group-settings-summary-card.role .group-settings-summary-icon {
+    color: #0b57d0;
+}
+
+.group-settings-summary-card.access .group-settings-summary-icon {
+    color: #b17a00;
+}
+
+.group-settings-summary-card.media .group-settings-summary-icon {
+    color: #0f8d68;
+}
+
+.group-settings-summary-card.rules .group-settings-summary-icon {
+    color: #7b5ce6;
+}
+
+.group-settings-card .card-body {
+    position: relative;
+    padding: 1.5rem;
+}
+
+.group-settings-card {
+    overflow: hidden;
+    border: 1px solid rgba(16, 35, 63, 0.08);
+    background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+    box-shadow: 0 18px 34px rgba(15, 39, 74, 0.08);
+}
+
+.group-settings-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 4px;
+    background: linear-gradient(90deg, var(--portal-brand), rgba(15, 108, 253, 0.15));
+}
+
+.group-settings-card.identity-card::before {
+    background: linear-gradient(90deg, #0f6cfd, #70a9ff);
+}
+
+.group-settings-card.privacy-card::before {
+    background: linear-gradient(90deg, #f4b544, #ffd98a);
+}
+
+.group-settings-card.media-card::before {
+    background: linear-gradient(90deg, #11a57c, #76e0bf);
+}
+
+.group-settings-card.rules-card::before {
+    background: linear-gradient(90deg, #7c5cff, #b59eff);
+}
+
+.group-settings-card-head {
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+}
+
+.group-settings-card-title {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    min-width: 0;
+}
+
+.group-settings-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.85rem;
+    height: 2.85rem;
+    border-radius: 1rem;
+    color: var(--portal-brand);
+    background: rgba(15, 108, 253, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(15, 108, 253, 0.08);
+    flex: 0 0 auto;
+}
+
+.group-settings-card-icon i {
+    font-size: 1.15rem;
+}
+
+.identity-card .group-settings-card-icon {
+    color: #0b57d0;
+    background: rgba(15, 108, 253, 0.11);
+}
+
+.privacy-card .group-settings-card-icon {
+    color: #b17a00;
+    background: rgba(255, 193, 7, 0.14);
+}
+
+.media-card .group-settings-card-icon {
+    color: #0f8d68;
+    background: rgba(15, 141, 104, 0.11);
+}
+
+.rules-card .group-settings-card-icon {
+    color: #7b5ce6;
+    background: rgba(123, 92, 230, 0.12);
+}
+
+.group-settings-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.group-settings-form .portal-input,
+.group-settings-form .form-select {
+    min-height: 3.15rem;
+    border-color: rgba(16, 35, 63, 0.1);
+    background: rgba(248, 251, 255, 0.86);
+}
+
+.group-settings-form textarea.portal-input {
+    min-height: 9rem;
+    resize: vertical;
+}
+
+.group-settings-form .field-hint {
+    color: #647791;
+}
+
+.group-settings-card-actions {
+    justify-content: flex-start;
+    margin-top: 0.25rem;
+}
+
+.group-settings-card-actions .btn {
+    width: auto;
+    min-width: 10.5rem;
+}
+
+.group-settings-media-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.group-settings-media-item {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 1.2rem;
+    border: 1px solid rgba(16, 35, 63, 0.08);
+    background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.group-settings-photo-shell {
+    width: 9rem;
+    height: 9rem;
+    padding: 0.22rem;
+    border-radius: 1.35rem;
+    background: linear-gradient(135deg, rgba(15, 108, 253, 0.18), rgba(15, 108, 253, 0.06));
+    box-shadow: 0 18px 32px rgba(15, 39, 74, 0.12);
+}
+
+.group-settings-photo-preview {
+    width: 100%;
+    height: 100%;
+    border-radius: 1.1rem;
+    object-fit: cover;
+    background: #fff;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+.group-settings-cover-preview {
+    min-height: 12rem;
+    border-radius: 1.25rem;
+}
+
+.group-settings-cover-preview.has-image {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 14px 26px rgba(15, 39, 74, 0.08);
+}
+
+.group-settings-file-name {
+    display: block;
+    color: var(--portal-ink);
+    font-size: 0.92rem;
+    font-weight: 700;
 }
 
 .groups-hero h2 {
@@ -2691,6 +2971,10 @@ body.portal-body {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .group-settings-media-grid {
+        grid-template-columns: 1fr;
+    }
+
     .password-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -2750,6 +3034,18 @@ body.portal-body {
     .invite-code-card {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .group-settings-card-head,
+    .group-settings-card-title,
+    .group-settings-hero-head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .group-settings-photo-shell {
+        width: 7.5rem;
+        height: 7.5rem;
     }
 
     .auth-panel {

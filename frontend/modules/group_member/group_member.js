@@ -439,26 +439,7 @@
       members: [],
     };
 
-    const overlay = qs("#modal-overlay");
-    const modal = qs("#add-modal");
-    const openBtn = qs("#open-add");
-    const cancelBtn = qs("#cancel");
-    const form = qs("#add-form");
     const exitBtn = qs("#exit-group");
-
-    function openModal() {
-      setFormError("");
-      overlay.hidden = false;
-      modal.hidden = false;
-      const userInput = qs("#user_id");
-      if (userInput) userInput.focus();
-    }
-
-    function closeModal() {
-      overlay.hidden = true;
-      modal.hidden = true;
-      form.reset();
-    }
 
     async function loadMembers() {
       setPageError("");
@@ -496,8 +477,6 @@
           emptyText: "No ordinary members are currently assigned to this group.",
         }, loadMembers);
 
-        show(openBtn, state.canManage);
-
         if (exitBtn) {
           exitBtn.hidden = !membership && Number(group.created_by) !== Number(profile.id);
           exitBtn.disabled = Number(group.created_by) === Number(profile.id);
@@ -522,14 +501,6 @@
       }
     }
 
-    if (openBtn) openBtn.addEventListener("click", openModal);
-    if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
-    if (overlay) overlay.addEventListener("click", closeModal);
-
-    document.addEventListener("keydown", (event) => {
-      if (!modal.hidden && event.key === "Escape") closeModal();
-    });
-
     if (exitBtn) {
       exitBtn.addEventListener("click", async () => {
         if (exitBtn.disabled) {
@@ -552,37 +523,6 @@
         }
       });
     }
-
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      setFormError("");
-
-      const userId = Number(qs("#user_id").value);
-      const roleVal = qs("#role").value;
-
-      if (!userId || userId < 1) {
-        APP.setFieldError(qs("#user_id"), "Please enter a valid user id (>= 1).");
-        setFormError("Please fix the highlighted fields.");
-        return;
-      }
-
-      APP.clearFieldError(qs("#user_id"));
-      const submitBtn = qs("#add-submit");
-      APP.setButtonLoading(submitBtn, true, "Adding...");
-
-      try {
-        await GroupMemberAPI.addMember({ group_id: groupId, user_id: userId, role: roleVal });
-        APP.showToast("Member added", "success");
-        closeModal();
-        await loadMembers();
-      } catch (err) {
-        const message = err.message || "Failed to add member.";
-        setFormError(message);
-        APP.showToast(message, "error");
-      } finally {
-        APP.setButtonLoading(submitBtn, false);
-      }
-    });
 
     await loadMembers();
   }

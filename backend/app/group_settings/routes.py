@@ -40,6 +40,19 @@ def is_group_admin(db: Session, group_id: int, user_id: int) -> bool:
     )
 
 
+def is_group_moderator(db: Session, group_id: int, user_id: int) -> bool:
+    return (
+        db.query(GroupMember)
+        .filter(
+            GroupMember.group_id == group_id,
+            GroupMember.user_id == user_id,
+            GroupMember.role == GroupMemberRole.moderator,
+        )
+        .first()
+        is not None
+    )
+
+
 def is_group_member(db: Session, group_id: int, user_id: int) -> bool:
     return (
         db.query(GroupMember)
@@ -68,6 +81,15 @@ def require_creator_or_admin(db: Session, group_id: int, user_id: int) -> None:
         raise HTTPException(status_code=403, detail="Not allowed")
 
 
+def require_creator_admin_or_moderator(db: Session, group_id: int, user_id: int) -> None:
+    if not (
+        is_group_creator(db, group_id, user_id)
+        or is_group_admin(db, group_id, user_id)
+        or is_group_moderator(db, group_id, user_id)
+    ):
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+
 @router.post("/", response_model=GroupSettingsOut, status_code=status.HTTP_201_CREATED)
 def create_settings(
     payload: GroupSettingsCreate,
@@ -75,7 +97,7 @@ def create_settings(
     current_user: User = Depends(get_current_user),
 ) -> GroupSettings:
     group = get_group_or_404(db, payload.group_id)
-    require_creator_or_admin(db, group.id, current_user.id)
+    require_creator_admin_or_moderator(db, group.id, current_user.id)
 
     existing = db.query(GroupSettings).filter(GroupSettings.group_id == group.id).first()
     if existing:
@@ -126,7 +148,7 @@ def update_settings(
     current_user: User = Depends(get_current_user),
 ) -> GroupSettings:
     group = get_group_or_404(db, group_id)
-    require_creator_or_admin(db, group.id, current_user.id)
+    require_creator_admin_or_moderator(db, group.id, current_user.id)
 
     s = get_settings_or_404(db, group.id)
 

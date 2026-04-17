@@ -364,16 +364,13 @@
     } = {}) {
         if (!groupId) return null;
 
-        const normalizedActiveKey = activeKey === "profile" ? "update" : activeKey;
-        const profileHref = canUpdateGroup
-            ? `group_detail.html?id=${groupId}&mode=edit`
-            : `group_detail.html?id=${groupId}`;
+        const normalizedActiveKey = ["profile", "update"].includes(activeKey) ? "settings" : activeKey;
 
         const links = {
             dashboard: `group_detail.html?id=${groupId}`,
             cycles: `cycles.html?group_id=${groupId}`,
             members: `group_members.html?group_id=${groupId}`,
-            update: profileHref,
+            update: `group_settings.html?group_id=${groupId}`,
             requests: `group_review.html?group_id=${groupId}`,
             settings: `group_settings.html?group_id=${groupId}`,
             back_groups: "my_groups.html",
@@ -403,11 +400,11 @@
             iconClass: "ti ti-users",
         });
         updateSidebarLink("#group-nav-update", {
-            label: "Group Profile",
-            iconClass: "ti ti-id-badge",
+            label: "Setting",
+            iconClass: "ti ti-adjustments-horizontal",
         });
         updateSidebarLink("#group-nav-requests", {
-            label: "Join Request",
+            label: "Join Requests",
             iconClass: "ti ti-user-plus",
         });
         updateSidebarLink("#group-nav-settings", {
@@ -443,7 +440,7 @@
         const invitesItem = findClosestListItem("#group-nav-invites");
         const addCycleItem = resolveNode("#group-nav-add-cycle-item") || findClosestListItem("#group-nav-add-cycle");
 
-        if (profileItem) profileItem.hidden = !canAccessAdministration;
+        if (profileItem) profileItem.hidden = true;
         if (requestsItem) requestsItem.hidden = !canAccessAdministration || !showJoinRequests;
         if (settingsItem) settingsItem.hidden = !canAccessAdministration;
         if (invitesItem) invitesItem.hidden = true;

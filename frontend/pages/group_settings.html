@@ -108,93 +108,281 @@
       </header>
 
       <div class="container-fluid py-4">
-        <div class="workspace-legacy-stack">
-          <section class="dashboard-panel card">
+        <div class="workspace-legacy-stack group-settings-page">
+          <section class="dashboard-panel card members-overview-panel group-settings-hero-panel">
             <div class="card-body">
-              <div class="workspace-legacy-intro">
-                <div>
-                  <h2 id="group-name">Group settings</h2>
-                  <p>View or manage contribution rules, late-payment behavior, and cycle defaults for this group.</p>
+              <div class="group-inline-meta members-page-heading group-settings-hero-head">
+                <div class="group-settings-hero-copy">
+                  <span class="group-settings-kicker">Group management</span>
+                  <h2 id="settings-group-name">Loading group settings...</h2>
+                  <p id="settings-group-subtitle">Manage the group profile, privacy, media, and recurring group rules from one page.</p>
                 </div>
-                <span id="perm-note" class="status-chip status-loading">Checking permissions</span>
-              </div>
-
-              <div class="toolbar" aria-label="Group settings controls">
-                <div class="toolbar-left input-row">
-                  <input id="group_id" type="number" min="1" step="1" placeholder="Group ID" aria-label="Group ID" />
-                  <button id="load" class="btn btn-secondary" type="button">Load</button>
-                </div>
-                <div class="toolbar-right">
-                  <button id="open-detail" class="btn btn-secondary" type="button">Open detail</button>
-                  <button id="edit-btn" class="btn" type="button">Edit / Create</button>
+                <div class="members-header-actions">
+                  <a id="back-to-group-dashboard" class="btn btn-secondary" href="#">Back to dashboard</a>
                 </div>
               </div>
 
-              <p id="select-error" class="error" role="alert"></p>
+              <div id="settings-badges" class="group-context-badges" aria-live="polite"></div>
               <div id="page-error" class="form-error" role="alert" hidden></div>
+              <div id="page-info" class="dashboard-note members-status" aria-live="polite"></div>
 
-              <div id="settings-view" hidden>
-                <dl id="settings-grid" class="profile-grid"></dl>
+              <div class="members-summary-grid group-settings-summary-grid" aria-label="Settings summary">
+                <article class="members-summary-card total group-settings-summary-card role">
+                  <div class="group-settings-summary-head">
+                    <span class="group-settings-summary-icon"><i class="ti ti-user"></i></span>
+                    <span>Your role</span>
+                  </div>
+                  <strong id="summary-role">-</strong>
+                  <p id="summary-role-note">Checking access for this workspace.</p>
+                </article>
+                <article class="members-summary-card admin group-settings-summary-card access">
+                  <div class="group-settings-summary-head">
+                    <span class="group-settings-summary-icon"><i class="ti ti-writing"></i></span>
+                    <span>Name access</span>
+                  </div>
+                  <strong id="summary-name-access">-</strong>
+                  <p>Only admins can rename the group.</p>
+                </article>
+                <article class="members-summary-card moderator group-settings-summary-card media">
+                  <div class="group-settings-summary-head">
+                    <span class="group-settings-summary-icon"><i class="ti ti-photo"></i></span>
+                    <span>Media access</span>
+                  </div>
+                  <strong id="summary-media-access">-</strong>
+                  <p>Cover updates are broader than the main group photo.</p>
+                </article>
+                <article class="members-summary-card member group-settings-summary-card rules">
+                  <div class="group-settings-summary-head">
+                    <span class="group-settings-summary-icon"><i class="ti ti-settings"></i></span>
+                    <span>Rule status</span>
+                  </div>
+                  <strong id="summary-rules-status">-</strong>
+                  <p id="summary-rules-note">Group contribution rules will load here.</p>
+                </article>
               </div>
-
-              <form id="settings-form" novalidate hidden>
-                <div id="form-error" class="form-error" role="alert" hidden></div>
-                <div id="form-success" class="form-success" role="status" hidden></div>
-
-                <div class="workspace-form-grid cols-2">
-                  <div class="field">
-                    <label for="contribution_amount">Contribution amount</label>
-                    <input id="contribution_amount" type="number" min="0.01" step="0.01" required
-                      placeholder="e.g. 20.00" aria-describedby="contribution_amount-error" />
-                    <p id="contribution_amount-error" class="error" role="alert"></p>
-                  </div>
-
-                  <div class="field">
-                    <label for="frequency">Frequency</label>
-                    <select id="frequency" class="select">
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="monthly">Monthly</option>
-                      <option value="custom_days">Custom days</option>
-                    </select>
-                  </div>
-
-                  <div class="field" id="custom-days-wrap" hidden>
-                    <label for="custom_days">Custom days</label>
-                    <input id="custom_days" type="number" min="1" step="1" placeholder="e.g. 10"
-                      aria-describedby="custom_days-error" />
-                    <p id="custom_days-error" class="error" role="alert"></p>
-                  </div>
-
-                  <div class="field">
-                    <label class="check">
-                      <input id="allow_late" type="checkbox" />
-                      <span>Allow late payments</span>
-                    </label>
-                  </div>
-
-                  <div class="field" id="late-penalty-wrap" hidden>
-                    <label for="late_penalty">Late penalty</label>
-                    <input id="late_penalty" type="number" min="0" step="0.01" placeholder="e.g. 2.00"
-                      aria-describedby="late_penalty-error" />
-                    <p id="late_penalty-error" class="error" role="alert"></p>
-                  </div>
-
-                  <div class="field">
-                    <label class="check">
-                      <input id="auto_start_cycle" type="checkbox" />
-                      <span>Auto-start cycle</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div class="modal-actions">
-                  <button id="save" class="btn" type="submit">Save</button>
-                  <button id="cancel" class="btn btn-secondary" type="button">Cancel</button>
-                </div>
-              </form>
             </div>
           </section>
+
+          <div class="row g-4 align-items-start">
+            <div class="col-12 col-xl-6">
+              <section class="dashboard-panel card group-settings-card identity-card">
+                <div class="card-body">
+                  <div class="member-role-header group-settings-card-head">
+                    <div class="group-settings-card-title">
+                      <span class="group-settings-card-icon"><i class="ti ti-writing"></i></span>
+                      <div>
+                      <h3>Name and Description</h3>
+                      <p>Rename the group if you are an admin. Moderators can still keep the description updated.</p>
+                      </div>
+                    </div>
+                    <span id="identity-access-chip" class="member-section-count">Checking access</span>
+                  </div>
+
+                  <form id="identity-form" class="group-settings-form" novalidate>
+                    <div id="identity-error" class="form-error" role="alert" hidden></div>
+                    <div id="identity-success" class="form-success" role="status" hidden></div>
+
+                    <div class="row g-3">
+                      <div class="col-12">
+                        <label for="name" class="form-label">Group name</label>
+                        <input id="name" class="form-control portal-input" type="text" maxlength="120"
+                          placeholder="Enter the group name" />
+                        <p id="name-error" class="field-error" role="alert"></p>
+                        <p id="name-help" class="field-hint mb-0">Only admins can change the group name.</p>
+                      </div>
+
+                      <div class="col-12">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea id="description" class="form-control portal-input" rows="5" maxlength="2000"
+                          placeholder="Describe who this group is for and how it should run"></textarea>
+                        <p id="description-help" class="field-hint mb-0">Admins and moderators can update the description.</p>
+                      </div>
+                    </div>
+
+                    <div class="portal-modal-actions group-settings-card-actions">
+                      <button id="identity-submit" class="btn portal-btn-primary" type="submit">Save identity</button>
+                    </div>
+                  </form>
+                </div>
+              </section>
+
+              <section class="dashboard-panel card group-settings-card privacy-card">
+                <div class="card-body">
+                  <div class="member-role-header group-settings-card-head">
+                    <div class="group-settings-card-title">
+                      <span class="group-settings-card-icon"><i class="ti ti-lock"></i></span>
+                      <div>
+                      <h3>Group Privacy</h3>
+                      <p>Control whether the group is public or private and whether it is visible in the workspace.</p>
+                      </div>
+                    </div>
+                    <span id="privacy-access-chip" class="member-section-count">Admin only</span>
+                  </div>
+
+                  <form id="privacy-form" class="group-settings-form" novalidate>
+                    <div id="privacy-error" class="form-error" role="alert" hidden></div>
+                    <div id="privacy-success" class="form-success" role="status" hidden></div>
+
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label for="privacy" class="form-label">Privacy</label>
+                        <select id="privacy" class="form-select portal-input">
+                          <option value="public">Public</option>
+                          <option value="private">Private</option>
+                        </select>
+                        <p class="field-hint mb-0">Public groups allow direct joins. Private groups use requests or codes.</p>
+                      </div>
+
+                      <div class="col-md-6">
+                        <label class="form-label d-block">Visibility</label>
+                        <div class="group-toggle-card">
+                          <div class="form-check form-switch m-0">
+                            <input id="visible" class="form-check-input" type="checkbox" />
+                            <label for="visible" class="form-check-label">Visible in workspace explore list</label>
+                          </div>
+                          <p class="field-hint mb-0">Turn this off to hide the group from Explore Groups.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="portal-modal-actions group-settings-card-actions">
+                      <button id="privacy-submit" class="btn portal-btn-primary" type="submit">Save privacy</button>
+                    </div>
+                  </form>
+                </div>
+              </section>
+            </div>
+
+            <div class="col-12 col-xl-6">
+              <section class="dashboard-panel card group-settings-card media-card">
+                <div class="card-body">
+                  <div class="member-role-header group-settings-card-head">
+                    <div class="group-settings-card-title">
+                      <span class="group-settings-card-icon"><i class="ti ti-photo"></i></span>
+                      <div>
+                      <h3>Group Images</h3>
+                      <p>Admins manage the group photo. Admins and moderators can refresh the cover image.</p>
+                      </div>
+                    </div>
+                    <span id="media-access-chip" class="member-section-count">Checking access</span>
+                  </div>
+
+                  <form id="media-form" class="group-settings-form" novalidate>
+                    <div id="media-error" class="form-error" role="alert" hidden></div>
+                    <div id="media-success" class="form-success" role="status" hidden></div>
+
+                    <div class="group-settings-media-grid">
+                      <div class="group-settings-media-item">
+                        <label class="form-label">Group photo</label>
+                        <div class="group-settings-photo-shell">
+                          <img id="group-image-preview" class="group-settings-photo-preview"
+                            src="../assets/images/logos/favicon.png" alt="Group photo preview" />
+                        </div>
+                        <input id="group_image" class="form-control portal-input" type="file"
+                          accept=".jpg,.jpeg,.png,.webp,.gif,image/*" />
+                        <p class="field-hint mb-0">Square image used around the workspace.</p>
+                        <strong id="group-image-file-name" class="group-settings-file-name">No new file selected</strong>
+                      </div>
+
+                      <div class="group-settings-media-item">
+                        <label class="form-label">Cover photo</label>
+                        <div id="cover-image-preview" class="group-card-cover no-image group-settings-cover-preview">
+                          <span id="cover-image-initials" class="group-card-cover-fallback">HG</span>
+                        </div>
+                        <input id="cover_image" class="form-control portal-input" type="file"
+                          accept=".jpg,.jpeg,.png,.webp,.gif,image/*" />
+                        <p class="field-hint mb-0">Wide banner image used on cards and the group header.</p>
+                        <strong id="cover-image-file-name" class="group-settings-file-name">No new file selected</strong>
+                      </div>
+                    </div>
+
+                    <div class="portal-modal-actions group-settings-card-actions">
+                      <button id="media-submit" class="btn portal-btn-primary" type="submit">Save images</button>
+                    </div>
+                  </form>
+                </div>
+              </section>
+
+              <section class="dashboard-panel card group-settings-card rules-card">
+                <div class="card-body">
+                  <div class="member-role-header group-settings-card-head">
+                    <div class="group-settings-card-title">
+                      <span class="group-settings-card-icon"><i class="ti ti-settings"></i></span>
+                      <div>
+                      <h3>Group Rules</h3>
+                      <p>Create or update the shared contribution rules for this group. Admins and moderators can manage these settings.</p>
+                      </div>
+                    </div>
+                    <span id="rules-access-chip" class="member-section-count">Checking access</span>
+                  </div>
+
+                  <form id="rules-form" class="group-settings-form" novalidate>
+                    <div id="rules-error" class="form-error" role="alert" hidden></div>
+                    <div id="rules-success" class="form-success" role="status" hidden></div>
+
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label for="contribution_amount" class="form-label">Contribution amount</label>
+                        <input id="contribution_amount" class="form-control portal-input" type="number" min="0.01"
+                          step="0.01" placeholder="e.g. 20.00" />
+                        <p id="contribution_amount-error" class="field-error" role="alert"></p>
+                      </div>
+
+                      <div class="col-md-6">
+                        <label for="frequency" class="form-label">Frequency</label>
+                        <select id="frequency" class="form-select portal-input">
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                          <option value="custom_days">Custom days</option>
+                        </select>
+                      </div>
+
+                      <div id="custom-days-wrap" class="col-md-6" hidden>
+                        <label for="custom_days" class="form-label">Custom days</label>
+                        <input id="custom_days" class="form-control portal-input" type="number" min="1" step="1"
+                          placeholder="e.g. 10" />
+                        <p id="custom_days-error" class="field-error" role="alert"></p>
+                      </div>
+
+                      <div class="col-md-6">
+                        <label class="form-label d-block">Late payments</label>
+                        <div class="group-toggle-card">
+                          <div class="form-check form-switch m-0">
+                            <input id="allow_late" class="form-check-input" type="checkbox" />
+                            <label for="allow_late" class="form-check-label">Allow late payments</label>
+                          </div>
+                          <p class="field-hint mb-0">If enabled, members can pay after the due point with a penalty.</p>
+                        </div>
+                      </div>
+
+                      <div id="late-penalty-wrap" class="col-md-6" hidden>
+                        <label for="late_penalty" class="form-label">Late penalty</label>
+                        <input id="late_penalty" class="form-control portal-input" type="number" min="0" step="0.01"
+                          placeholder="e.g. 2.00" />
+                        <p id="late_penalty-error" class="field-error" role="alert"></p>
+                      </div>
+
+                      <div class="col-md-6">
+                        <label class="form-label d-block">Auto-start cycle</label>
+                        <div class="group-toggle-card">
+                          <div class="form-check form-switch m-0">
+                            <input id="auto_start_cycle" class="form-check-input" type="checkbox" />
+                            <label for="auto_start_cycle" class="form-check-label">Start the next cycle automatically</label>
+                          </div>
+                          <p class="field-hint mb-0">Use this when the group should keep rolling without manual restarts.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="portal-modal-actions group-settings-card-actions">
+                      <button id="rules-submit" class="btn portal-btn-primary" type="submit">Save rules</button>
+                    </div>
+                  </form>
+                </div>
+              </section>
+            </div>
+          </div>
         </div>
       </div>
     </div>

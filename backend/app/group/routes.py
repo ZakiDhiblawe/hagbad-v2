@@ -50,6 +50,14 @@ def _is_group_member(db: Session, group_id: int, user_id: int) -> bool:
     )
 
 
+def _get_group_membership(db: Session, group_id: int, user_id: int) -> GroupMember | None:
+    return (
+        db.query(GroupMember)
+        .filter(GroupMember.group_id == group_id, GroupMember.user_id == user_id)
+        .first()
+    )
+
+
 def _can_access_group(db: Session, group: Group, current_user: User) -> bool:
     if group.created_by == current_user.id:
         return True
@@ -359,7 +367,32 @@ async def update_group(
     current_user: User = Depends(get_current_user),
 ) -> Group:
     group = _get_group_or_404(db, group_id)
-    _require_creator(group, current_user)
+    creator_access = group.created_by == current_user.id
+    membership = _get_group_membership(db, group.id, current_user.id)
+    membership_role = membership.role if membership else None
+    admin_access = creator_access or membership_role == GroupMemberRole.admin
+    moderator_access = membership_role == GroupMemberRole.moderator
+
+    if not (admin_access or moderator_access):
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    if name is not None and not admin_access:
+        raise HTTPException(status_code=403, detail="Only group admins can change the group name")
+
+    if privacy is not None and not admin_access:
+        raise HTTPException(status_code=403, detail="Only group admins can change privacy")
+
+    if visible is not None and not admin_access:
+        raise HTTPException(status_code=403, detail="Only group admins can change visibility")
+
+    if status_value is not None and not admin_access:
+        raise HTTPException(status_code=403, detail="Only group admins can change group status")
+
+    if (remove_group_image or (group_image is not None and group_image.filename)) and not admin_access:
+        raise HTTPException(status_code=403, detail="Only group admins can update the group photo")
+
+    if (remove_cover_image or (cover_image is not None and cover_image.filename)) and not (admin_access or moderator_access):
+        raise HTTPException(status_code=403, detail="Only admins or moderators can update the cover photo")
 
     if name is not None:
         clean_name = name.strip()

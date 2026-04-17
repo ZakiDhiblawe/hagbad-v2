@@ -765,12 +765,17 @@
       return;
     }
 
+    if (mode === "edit") {
+      window.APP.navigate(`group_settings.html?group_id=${id}`);
+      return;
+    }
+
     const profile = await ensureProfile();
     if (!profile) return;
     mountWorkspaceMenu(profile);
 
     const group = await window.GroupAPI.getGroup(id);
-    const isEditMode = mode === "edit";
+    const isEditMode = false;
     const isCreator = Number(group.created_by) === Number(profile.id);
 
     function setHref(selector, href) {
@@ -1022,7 +1027,7 @@
     const editModeLink = qs("#open-edit-mode");
     if (editModeLink) {
       editModeLink.hidden = !isCreator;
-      editModeLink.href = `group_detail.html?id=${id}&mode=edit`;
+      editModeLink.href = `group_settings.html?group_id=${id}`;
     }
 
     await loadSummary();
