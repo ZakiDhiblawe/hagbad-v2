@@ -51,6 +51,14 @@
     });
   }
 
+  async function fillMembers(payload) {
+    return await request("/cycle-members/fill", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+  }
+
   async function updateMember(memberId, payload) {
     return await request(`/cycle-members/${memberId}`, {
       method: "PUT",
@@ -66,5 +74,5 @@
     });
   }
 
-  window.CycleMemberAPI = { listMembers, getMember, addMember, updateMember, deleteMember };
+  window.CycleMemberAPI = { listMembers, getMember, addMember, fillMembers, updateMember, deleteMember };
 })();

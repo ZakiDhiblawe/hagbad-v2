@@ -68,6 +68,22 @@
     });
   }
 
+  async function submitPayment(paymentId, payload = {}) {
+    return await request(`/payments/${paymentId}/submit`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Accept: "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async function approvePayment(paymentId, payload = {}) {
+    return await request(`/payments/${paymentId}/approve`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Accept: "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+  }
+
   async function deletePayment(paymentId) {
     return await request(`/payments/${paymentId}`, {
       method: "DELETE",
@@ -75,5 +91,14 @@
     });
   }
 
-  window.PaymentAPI = { listPayments, getPayment, getSummary, createPayment, updatePayment, deletePayment };
+  window.PaymentAPI = {
+    listPayments,
+    getPayment,
+    getSummary,
+    createPayment,
+    updatePayment,
+    submitPayment,
+    approvePayment,
+    deletePayment,
+  };
 })();

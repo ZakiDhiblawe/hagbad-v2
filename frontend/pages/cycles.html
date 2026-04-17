@@ -115,40 +115,130 @@
       </header>
 
       <div class="container-fluid py-4">
-        <div class="workspace-legacy-stack">
-          <section class="dashboard-panel card">
+        <div class="workspace-legacy-stack cycle-workspace-page">
+          <section class="dashboard-panel card members-overview-panel cycle-overview-panel">
             <div class="card-body">
-              <div class="workspace-legacy-intro">
+              <div class="group-inline-meta members-page-heading cycle-page-heading">
                 <div>
                   <h2 id="group-name">Loading group...</h2>
-                  <p id="group-subtitle">Manage cycle rounds for this group workspace.</p>
+                  <p id="group-subtitle">Prepare one cycle at a time, manage the active round, and keep payments and payouts moving in order.</p>
                 </div>
-                <p id="group-note" class="dashboard-note mb-0">Preparing cycles</p>
-              </div>
-
-              <p id="settings-hint" class="dashboard-note mb-3"></p>
-
-              <div class="toolbar" role="group" aria-label="Cycle actions">
-                <div class="toolbar-left">
-                  <button id="open-group" class="btn btn-secondary" type="button">Dashboard</button>
-                  <button id="open-members" class="btn btn-secondary" type="button">Members</button>
-                  <button id="open-settings" class="btn btn-secondary" type="button">Settings</button>
-                </div>
-                <div class="toolbar-right">
+                <div class="members-header-actions">
                   <button id="refresh" class="btn btn-secondary" type="button">Refresh</button>
-                  <button id="open-create" class="btn" type="button">Create cycle</button>
+                  <button id="open-create" class="btn" type="button" hidden>Create cycle</button>
                 </div>
               </div>
 
+              <p id="group-note" class="dashboard-note mb-0">Preparing cycles</p>
+              <p id="settings-hint" class="dashboard-note mb-3"></p>
+              <div id="cycle-badges" class="group-context-badges" aria-live="polite"></div>
               <div id="page-error" class="form-error" role="alert" hidden></div>
-              <div id="list-status" class="dashboard-note mb-3" aria-live="polite"></div>
-              <ul id="cycles-list" class="list" aria-label="Cycles"></ul>
+              <div id="list-status" class="dashboard-note members-status" aria-live="polite"></div>
 
-              <div class="pager" aria-label="Pagination">
-                <button id="prev" class="btn btn-secondary" type="button">Prev</button>
-                <span id="page-label" class="dashboard-note">Page 1</span>
-                <button id="next" class="btn btn-secondary" type="button">Next</button>
+              <div id="cycle-summary-grid" class="members-summary-grid cycle-summary-grid" aria-label="Cycle summary"></div>
+            </div>
+          </section>
+
+          <section id="cycle-empty-panel" class="dashboard-panel card member-role-panel" hidden>
+            <div class="card-body">
+              <div class="member-role-header">
+                <div>
+                  <h3>No current cycle</h3>
+                  <p id="empty-copy">This group does not have a pending, paused, or active cycle right now.</p>
+                </div>
+                <div class="group-member-actions">
+                  <button id="empty-open-group" class="member-action-btn secondary" type="button">Dashboard</button>
+                  <button id="empty-open-settings" class="member-action-btn secondary" type="button">Settings</button>
+                  <button id="empty-create" class="member-action-btn primary" type="button" hidden>Create cycle</button>
+                </div>
               </div>
+              <div id="empty-note" class="member-empty-state">
+                When a cycle is created, it stays pending until the participants are added, the payout order is reviewed, and the manager chooses to start it.
+              </div>
+            </div>
+          </section>
+
+          <section id="pending-cycle-panel" class="dashboard-panel card member-role-panel" hidden>
+            <div class="card-body">
+              <div class="member-role-header">
+                <div>
+                  <h3 id="pending-title">Pending cycle setup</h3>
+                  <p id="pending-copy">Add every group member, review the payout order, confirm the contribution rules, then start the cycle when you are ready.</p>
+                </div>
+                <div class="group-member-actions">
+                  <button id="pending-open-members" class="member-action-btn secondary" type="button">Manage members</button>
+                  <button id="pending-open-order" class="member-action-btn secondary" type="button">Review order</button>
+                  <button id="pending-open-rules" class="member-action-btn secondary" type="button">Payment rules</button>
+                  <button id="pending-start" class="member-action-btn primary" type="button">Start cycle</button>
+                </div>
+              </div>
+
+              <div id="pending-setup-grid" class="cycle-stage-grid" aria-label="Cycle setup status"></div>
+
+              <div class="cycle-section-block">
+                <div class="member-role-header cycle-section-header">
+                  <div>
+                    <h4>Current payout order</h4>
+                    <p>Everyone added to this pending cycle appears below in payout order.</p>
+                  </div>
+                  <span id="pending-order-count" class="member-section-count neutral">0 participants</span>
+                </div>
+                <div id="pending-order-list" class="cycle-order-list" aria-label="Pending cycle payout order"></div>
+              </div>
+            </div>
+          </section>
+
+          <section id="active-cycle-panel" class="dashboard-panel card member-role-panel" hidden>
+            <div class="card-body">
+              <div class="member-role-header">
+                <div>
+                  <h3 id="active-title">Active cycle</h3>
+                  <p id="active-copy">Track the current round, the next payment date, and the payout turn without leaving the cycle workspace.</p>
+                </div>
+                <div class="group-member-actions">
+                  <button id="active-open-members" class="member-action-btn secondary" type="button">Participants</button>
+                  <button id="active-open-payments" class="member-action-btn secondary" type="button">Payments</button>
+                  <button id="active-open-payouts" class="member-action-btn secondary" type="button">Payouts</button>
+                  <button id="active-resume" class="member-action-btn primary" type="button" hidden>Resume cycle</button>
+                </div>
+              </div>
+
+              <div id="active-round-grid" class="members-summary-grid cycle-summary-grid" aria-label="Active cycle summary"></div>
+
+              <div id="current-payout-panel" class="cycle-section-block" hidden>
+                <div class="member-role-header cycle-section-header">
+                  <div>
+                    <h4>Current payout turn</h4>
+                    <p id="current-payout-copy">This turn opens only after all payments for the round are approved.</p>
+                  </div>
+                  <span id="current-payout-state" class="member-section-count neutral">No payout</span>
+                </div>
+                <div id="current-payout-card" class="cycle-payout-card"></div>
+              </div>
+
+              <div class="cycle-section-block">
+                <div class="member-role-header cycle-section-header">
+                  <div>
+                    <h4 id="current-payments-title">Current round payments</h4>
+                    <p id="current-payments-copy">Members submit the payment for the active round here, then managers approve it.</p>
+                  </div>
+                  <span id="current-payments-count" class="member-section-count neutral">0 payments</span>
+                </div>
+                <div id="current-payments-list" class="cycle-round-list" aria-label="Current round payments"></div>
+              </div>
+            </div>
+          </section>
+
+          <section id="cycle-history-panel" class="dashboard-panel card member-role-panel" hidden>
+            <div class="card-body">
+              <div class="member-role-header">
+                <div>
+                  <h3>Cycle history</h3>
+                  <p>Older completed cycles stay here for review after the current work is done.</p>
+                </div>
+                <span id="history-count" class="member-section-count neutral">0 cycles</span>
+              </div>
+              <div id="cycle-history-list" class="cycle-history-list" aria-label="Cycle history"></div>
             </div>
           </section>
         </div>
@@ -159,7 +249,7 @@
   <div id="modal-overlay" class="modal-overlay" hidden></div>
   <div id="create-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="create-title" hidden>
     <h3 id="create-title">Create cycle</h3>
-    <p class="hint">Only the creator or an admin can create and start cycles for this group.</p>
+    <p class="hint">Only group admins or moderators can create a cycle. It will stay pending until the participants are added, the payout order is reviewed, and you choose to start it.</p>
 
     <form id="create-form" novalidate>
       <div id="form-error" class="form-error" role="alert" hidden></div>
@@ -184,13 +274,6 @@
           <label for="custom_days">Custom days</label>
           <input id="custom_days" type="number" min="1" step="1" placeholder="e.g. 10" />
         </div>
-
-        <div class="field">
-          <label class="check">
-            <input id="auto_start" type="checkbox" />
-            <span>Start immediately after create</span>
-          </label>
-        </div>
       </div>
 
       <div class="modal-actions">
@@ -212,6 +295,9 @@
   <script src="../modules/group_member/group_member_api.js" defer></script>
   <script src="../modules/group_settings/group_settings_api.js" defer></script>
   <script src="../modules/cycle/cycle_api.js" defer></script>
+  <script src="../modules/cycle_member/cycle_member_api.js" defer></script>
+  <script src="../modules/payment/payment_api.js" defer></script>
+  <script src="../modules/payout/payout_api.js" defer></script>
   <script src="../modules/cycle/cycle.js" defer></script>
 </body>
 </html>

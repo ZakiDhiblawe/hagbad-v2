@@ -127,7 +127,12 @@
               </div>
               <div class="toolbar-right">
                 <input id="order-filter" type="number" min="1" step="1" placeholder="Filter order" aria-label="Filter by payout order" />
+                <select id="fill-order-mode" class="select" aria-label="Fill remaining members order mode">
+                  <option value="manual">Fill by joined order</option>
+                  <option value="random">Fill randomly</option>
+                </select>
                 <button id="refresh" class="btn btn-secondary" type="button">Refresh</button>
+                <button id="fill-group" class="btn btn-secondary" type="button">Add all remaining</button>
                 <button id="open-add" class="btn" type="button">Add participant</button>
               </div>
             </div>

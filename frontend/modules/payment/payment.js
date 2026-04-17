@@ -19,7 +19,8 @@
       activeKey: "cycles",
       pageTitle,
       canUpdateGroup: Number(group.created_by) === Number(profile.id),
-      canCreateCycle: Number(group.created_by) === Number(profile.id) || role === "admin",
+      canCreateCycle:
+        Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator",
       canAccessAdministration:
         Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator",
       showJoinRequests: group.privacy !== "public",
@@ -98,7 +99,17 @@
     return all;
   }
 
+  function paymentNeedsApproval(payment) {
+    return Number(payment.amount_paid || 0) > 0 && !payment.paid_at;
+  }
+
+  function paymentState(payment) {
+    if (paymentNeedsApproval(payment)) return "awaiting approval";
+    return payment.status;
+  }
+
   function paymentBadgeClass(status) {
+    if (status === "awaiting approval") return "warn";
     if (status === "paid") return "good";
     if (status === "late") return "bad";
     return "warn";
@@ -162,8 +173,8 @@
       badges.style.marginTop = "8px";
 
       const statusBadge = document.createElement("span");
-      statusBadge.className = `badge ${paymentBadgeClass(payment.status)}`;
-      statusBadge.textContent = payment.status;
+      statusBadge.className = `badge ${paymentBadgeClass(paymentState(payment))}`;
+      statusBadge.textContent = paymentState(payment);
       badges.appendChild(statusBadge);
 
       left.appendChild(title);
@@ -179,6 +190,49 @@
       open.href = `payment_detail.html?payment_id=${payment.id}&cycle_id=${cycleId}${cycleMemberId ? `&cycle_member_id=${cycleMemberId}` : ""}`;
       open.textContent = canManage ? "Manage" : "View";
       actions.appendChild(open);
+
+      const isOwnPayment = !canManage;
+      if (isOwnPayment && !paymentNeedsApproval(payment) && payment.status !== "paid") {
+        const submit = document.createElement("button");
+        submit.className = "btn";
+        submit.style.width = "auto";
+        submit.type = "button";
+        submit.textContent = "I paid";
+        submit.addEventListener("click", async () => {
+          APP.setButtonLoading(submit, true, "Submitting…");
+          try {
+            await PaymentAPI.submitPayment(payment.id, {});
+            APP.showToast("Payment submitted for approval", "success");
+            await window.__paymentReload();
+          } catch (e) {
+            APP.showToast(e.message || "Failed to submit payment.", "error");
+          } finally {
+            APP.setButtonLoading(submit, false);
+          }
+        });
+        actions.appendChild(submit);
+      }
+
+      if (canManage && paymentNeedsApproval(payment)) {
+        const approve = document.createElement("button");
+        approve.className = "btn";
+        approve.style.width = "auto";
+        approve.type = "button";
+        approve.textContent = "Approve";
+        approve.addEventListener("click", async () => {
+          APP.setButtonLoading(approve, true, "Approving…");
+          try {
+            await PaymentAPI.approvePayment(payment.id, {});
+            APP.showToast("Payment approved", "success");
+            await window.__paymentReload();
+          } catch (e) {
+            APP.showToast(e.message || "Failed to approve payment.", "error");
+          } finally {
+            APP.setButtonLoading(approve, false);
+          }
+        });
+        actions.appendChild(approve);
+      }
 
       li.appendChild(left);
       li.appendChild(actions);
@@ -202,14 +256,15 @@
     const cycle = await CycleAPI.getCycle(cycleId);
     const group = await GroupAPI.getGroup(cycle.group_id);
     const role = await myRole(cycle.group_id, profile.id).catch(() => null);
-    const canManage = Number(group.created_by) === Number(profile.id) || role === "admin";
+    const canManage =
+      Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator";
     applyGroupWorkspace(profile, group, role, "Payments");
 
     text(qs("#cycle-title"), `Payments for cycle #${cycle.id}`);
-    text(qs("#cycle-subtitle"), `${group.name} • due / paid / late accounting`);
+    text(qs("#cycle-subtitle"), `${group.name} • round contributions and payment approvals`);
     const permissionsNote = canManage
-      ? "Creator/admin can create and correct payment records."
-      : "You can view only your own payment records.";
+      ? "Round payment records are generated automatically when the cycle starts. Members submit them, then admins and moderators approve them."
+      : "Your scheduled contribution records appear here. Use I paid to submit each round for approval.";
     text(qs("#permissions-note"), permissionsNote);
     text(qs("#permissions-note-main"), permissionsNote);
 
@@ -248,7 +303,7 @@
       }
     }
 
-    show(qs("#open-create"), canManage);
+    show(qs("#open-create"), false);
 
     let page = 1;
     let status = "";
@@ -290,6 +345,11 @@
         text(qs("#list-status"), msg);
       }
     }
+
+    window.__paymentReload = async function reload() {
+      await refreshSummary();
+      await load();
+    };
 
     qs("#refresh").addEventListener("click", async () => {
       await refreshSummary();
@@ -416,7 +476,8 @@
     const cycle = await CycleAPI.getCycle(payment.cycle_id);
     const group = await GroupAPI.getGroup(cycle.group_id);
     const role = await myRole(cycle.group_id, profile.id).catch(() => null);
-    const canManage = Number(group.created_by) === Number(profile.id) || role === "admin";
+    const canManage =
+      Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator";
     applyGroupWorkspace(profile, group, role, "Payment Detail");
 
     qs("#back").addEventListener("click", () => {
@@ -428,15 +489,23 @@
 
     async function render() {
       payment = await PaymentAPI.getPayment(paymentId);
+      const displayState = paymentState(payment);
+      const canSubmitOwn = !canManage && !paymentNeedsApproval(payment) && payment.status !== "paid";
+      const canApprove = canManage && paymentNeedsApproval(payment);
+
       text(qs("#payment-title"), `Payment #${payment.id}`);
       text(qs("#subtitle"), `Cycle #${payment.cycle_id} • ${group.name}`);
       text(qs("#payment-note"), canManage
-        ? "Creator/admin can update accounting fields carefully."
-        : "View only.");
+        ? "Members submit each round payment here. Admins and moderators approve it after the contribution is confirmed."
+        : paymentNeedsApproval(payment)
+          ? "Your payment has been submitted and is now waiting for approval."
+          : payment.status === "paid"
+            ? "This round payment has already been approved."
+            : "Use this page to submit your scheduled contribution when you have paid it.");
 
       const statusBadge = qs("#payment-status");
-      statusBadge.textContent = payment.status;
-      statusBadge.className = `badge ${paymentBadgeClass(payment.status)}`;
+      statusBadge.textContent = displayState;
+      statusBadge.className = `badge ${paymentBadgeClass(displayState)}`;
 
       const grid = qs("#payment-grid");
       grid.innerHTML = "";
@@ -445,6 +514,7 @@
         ["Due date", payment.due_date],
         ["Amount due", payment.amount_due],
         ["Amount paid", payment.amount_paid],
+        ["Approval state", displayState],
         ["Paid at", formatDateTime(payment.paid_at)],
         ["Created by", payment.created_by],
         ["Created at", formatDateTime(payment.created_at)],
@@ -465,6 +535,19 @@
       qs("#notes").value = payment.notes || "";
 
       show(qs("#manage"), canManage);
+      show(qs("#workflow-actions"), canSubmitOwn || canApprove);
+      show(qs("#submit-payment"), canSubmitOwn);
+      show(qs("#approve-payment"), canApprove);
+      text(qs("#workflow-note"), canApprove
+        ? "This member marked the payment as paid. Approve it once you confirm the contribution was received."
+        : canSubmitOwn
+          ? "When you have paid this round contribution, submit it here so an admin or moderator can approve it."
+          : paymentNeedsApproval(payment)
+            ? "This payment is waiting for approval."
+            : payment.status === "paid"
+              ? "This payment has already been approved."
+              : "No action is available on this payment right now.");
+      setMessage("#workflow-error", "");
       qs("#delete").disabled = !(canManage && Number(payment.amount_paid) === 0 && payment.status !== "paid");
     }
 
@@ -519,6 +602,38 @@
           APP.showToast(err.message || "Failed to delete payment.", "error");
         } finally {
           APP.setButtonLoading(qs("#delete"), false);
+        }
+      });
+    }
+
+    if (qs("#submit-payment")) {
+      qs("#submit-payment").addEventListener("click", async () => {
+        setMessage("#workflow-error", "");
+        APP.setButtonLoading(qs("#submit-payment"), true, "Submitting…");
+        try {
+          await PaymentAPI.submitPayment(payment.id, {});
+          APP.showToast("Payment submitted for approval", "success");
+          await render();
+        } catch (err) {
+          setMessage("#workflow-error", err.message || "Failed to submit payment.");
+        } finally {
+          APP.setButtonLoading(qs("#submit-payment"), false);
+        }
+      });
+    }
+
+    if (qs("#approve-payment")) {
+      qs("#approve-payment").addEventListener("click", async () => {
+        setMessage("#workflow-error", "");
+        APP.setButtonLoading(qs("#approve-payment"), true, "Approving…");
+        try {
+          await PaymentAPI.approvePayment(payment.id, {});
+          APP.showToast("Payment approved", "success");
+          await render();
+        } catch (err) {
+          setMessage("#workflow-error", err.message || "Failed to approve payment.");
+        } finally {
+          APP.setButtonLoading(qs("#approve-payment"), false);
         }
       });
     }

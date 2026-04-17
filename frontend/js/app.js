@@ -444,7 +444,7 @@
         if (requestsItem) requestsItem.hidden = !canAccessAdministration || !showJoinRequests;
         if (settingsItem) settingsItem.hidden = !canAccessAdministration;
         if (invitesItem) invitesItem.hidden = true;
-        if (addCycleItem) addCycleItem.hidden = true;
+        if (addCycleItem) addCycleItem.hidden = !canCreateCycle;
         if (backGroupsItem) backGroupsItem.hidden = false;
 
         if (sideNav) {

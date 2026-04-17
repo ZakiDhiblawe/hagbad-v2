@@ -12,7 +12,7 @@ from app.cycle_member.models import CycleMember
 from app.group_member.models import GroupMember, GroupMemberRole
 from app.group_settings.models import GroupSettings
 from app.payment.models import Payment, PaymentStatus
-from app.payment.schemas import PaymentCreate, PaymentOut, PaymentSummary, PaymentUpdate
+from app.payment.schemas import PaymentCreate, PaymentDecision, PaymentOut, PaymentSubmission, PaymentSummary, PaymentUpdate
 from app.payout.models import Payout, PayoutStatus
 from app.user.models import User
 from utility.security import get_current_user, get_db
@@ -61,13 +61,37 @@ def is_group_admin_for_cycle(db: Session, cycle_id: int, user_id: int) -> bool:
     )
 
 
+def is_group_moderator_for_cycle(db: Session, cycle_id: int, user_id: int) -> bool:
+    cycle = db.query(Cycle).filter(Cycle.id == cycle_id).first()
+    if not cycle:
+        return False
+    return (
+        db.query(GroupMember)
+        .filter(
+            GroupMember.group_id == cycle.group_id,
+            GroupMember.user_id == user_id,
+            GroupMember.role == GroupMemberRole.moderator,
+        )
+        .first()
+        is not None
+    )
+
+
 def require_cycle_manager(db: Session, cycle_id: int, user_id: int) -> None:
-    if not (is_cycle_creator(db, cycle_id, user_id) or is_group_admin_for_cycle(db, cycle_id, user_id)):
-        raise HTTPException(status_code=403, detail="Only the cycle creator or a group admin can manage payments")
+    if not (
+        is_cycle_creator(db, cycle_id, user_id)
+        or is_group_admin_for_cycle(db, cycle_id, user_id)
+        or is_group_moderator_for_cycle(db, cycle_id, user_id)
+    ):
+        raise HTTPException(status_code=403, detail="Only a group admin or moderator can manage payments")
 
 
 def can_view_payment(db: Session, payment: Payment, user_id: int) -> bool:
-    if is_cycle_creator(db, payment.cycle_id, user_id) or is_group_admin_for_cycle(db, payment.cycle_id, user_id):
+    if (
+        is_cycle_creator(db, payment.cycle_id, user_id)
+        or is_group_admin_for_cycle(db, payment.cycle_id, user_id)
+        or is_group_moderator_for_cycle(db, payment.cycle_id, user_id)
+    ):
         return True
     cycle_member = get_cycle_member_or_404(db, payment.cycle_member_id)
     return cycle_member.user_id == user_id
@@ -100,11 +124,16 @@ def normalize_payment_fields(
     due_date: date,
     paid_at: datetime | None,
 ) -> tuple[PaymentStatus, datetime | None]:
-    status_value = resolve_payment_status(amount_due=amount_due, amount_paid=amount_paid, due_date=due_date)
     if amount_paid > amount_due:
         raise HTTPException(status_code=400, detail="amount_paid cannot be greater than amount_due")
-    if status_value == PaymentStatus.paid:
+    if paid_at is not None and amount_paid < amount_due:
+        raise HTTPException(status_code=400, detail="Only fully submitted payments can be approved")
+
+    if amount_paid >= amount_due and paid_at is not None:
+        status_value = PaymentStatus.paid
         return status_value, paid_at or datetime.now(timezone.utc)
+
+    status_value = PaymentStatus.late if due_date < date.today() else PaymentStatus.due
     return status_value, None
 
 
@@ -119,6 +148,15 @@ def sync_payment_status(payment: Payment) -> bool:
     payment.status = new_status
     payment.paid_at = new_paid_at
     return changed
+
+
+def payment_is_pending_approval(payment: Payment) -> bool:
+    return payment.amount_paid > 0 and payment.paid_at is None
+
+
+def annotate_payment(payment: Payment) -> Payment:
+    payment.pending_approval = payment_is_pending_approval(payment)
+    return payment
 
 
 def sync_cycle_payments(db: Session, cycle_id: int) -> None:
@@ -136,6 +174,8 @@ def ensure_cycle_member_matches_cycle(cycle_id: int, cycle_member: CycleMember) 
 
 
 def ensure_cycle_can_accept_payments(cycle: Cycle) -> None:
+    if cycle.status != CycleStatus.active:
+        raise HTTPException(status_code=400, detail="Payments can only be managed while the cycle is active")
     if cycle.status == CycleStatus.completed:
         raise HTTPException(status_code=400, detail="Cannot create payments for a completed cycle")
 
@@ -203,7 +243,7 @@ def create_payment(
         db.rollback()
         raise HTTPException(status_code=400, detail="Payment already exists for this cycle member on that due date")
     db.refresh(payment)
-    return payment
+    return annotate_payment(payment)
 
 
 @router.get("/{payment_id}", response_model=PaymentOut)
@@ -217,7 +257,7 @@ def get_payment(
     if sync_payment_status(payment):
         db.commit()
         db.refresh(payment)
-    return payment
+    return annotate_payment(payment)
 
 
 @router.get("/", response_model=list[PaymentOut])
@@ -233,7 +273,11 @@ def list_payments(
     current_user: User = Depends(get_current_user),
 ) -> list[Payment]:
     cycle = get_cycle_or_404(db, cycle_id)
-    is_manager = is_cycle_creator(db, cycle.id, current_user.id) or is_group_admin_for_cycle(db, cycle.id, current_user.id)
+    is_manager = (
+        is_cycle_creator(db, cycle.id, current_user.id)
+        or is_group_admin_for_cycle(db, cycle.id, current_user.id)
+        or is_group_moderator_for_cycle(db, cycle.id, current_user.id)
+    )
     sync_cycle_payments(db, cycle.id)
 
     query = db.query(Payment).filter(Payment.cycle_id == cycle.id)
@@ -275,7 +319,7 @@ def list_payments(
         for item in items:
             db.refresh(item)
 
-    return items
+    return [annotate_payment(item) for item in items]
 
 
 @router.get("/summary/cycle/{cycle_id}", response_model=PaymentSummary)
@@ -293,7 +337,7 @@ def get_cycle_payment_summary(
     paid_count = sum(1 for item in items if item.status == PaymentStatus.paid)
     late_count = sum(1 for item in items if item.status == PaymentStatus.late)
     total_amount_due = safe_decimal_sum([item.amount_due for item in items])
-    total_amount_paid = safe_decimal_sum([item.amount_paid for item in items])
+    total_amount_paid = safe_decimal_sum([item.amount_paid for item in items if item.status == PaymentStatus.paid])
 
     return PaymentSummary(
         cycle_id=cycle.id,
@@ -343,7 +387,77 @@ def update_payment(
         db.rollback()
         raise HTTPException(status_code=400, detail="Another payment already exists for this cycle member on that due date")
     db.refresh(payment)
-    return payment
+    return annotate_payment(payment)
+
+
+@router.put("/{payment_id}/submit", response_model=PaymentOut)
+def submit_payment(
+    payment_id: int,
+    payload: PaymentSubmission,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Payment:
+    payment = get_payment_or_404(db, payment_id)
+    cycle = get_cycle_or_404(db, payment.cycle_id)
+    ensure_cycle_can_accept_payments(cycle)
+
+    cycle_member = get_cycle_member_or_404(db, payment.cycle_member_id)
+    if cycle_member.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the payment owner can submit this payment")
+    if payment.status == PaymentStatus.paid or payment.paid_at is not None:
+        raise HTTPException(status_code=400, detail="This payment is already approved")
+    if has_locked_payout_for_cycle_member(db, payment.cycle_member_id):
+        raise HTTPException(status_code=400, detail="Cannot submit payments after a payout has been approved or paid for this participant")
+
+    submitted_amount = payload.amount_paid if payload.amount_paid is not None else payment.amount_due
+    if submitted_amount != payment.amount_due:
+        raise HTTPException(status_code=400, detail="Only the full scheduled contribution can be submitted for approval")
+
+    payment.amount_paid = submitted_amount
+    payment.paid_at = None
+    if payload.notes is not None:
+        payment.notes = payload.notes
+    payment.status, payment.paid_at = normalize_payment_fields(
+        amount_due=payment.amount_due,
+        amount_paid=payment.amount_paid,
+        due_date=payment.due_date,
+        paid_at=None,
+    )
+
+    db.commit()
+    db.refresh(payment)
+    return annotate_payment(payment)
+
+
+@router.put("/{payment_id}/approve", response_model=PaymentOut)
+def approve_payment(
+    payment_id: int,
+    payload: PaymentDecision,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Payment:
+    payment = get_payment_or_404(db, payment_id)
+    cycle = get_cycle_or_404(db, payment.cycle_id)
+    require_cycle_manager(db, payment.cycle_id, current_user.id)
+    ensure_cycle_can_accept_payments(cycle)
+
+    if payment.status == PaymentStatus.paid or payment.paid_at is not None:
+        raise HTTPException(status_code=400, detail="This payment is already approved")
+    if not payment_is_pending_approval(payment):
+        raise HTTPException(status_code=400, detail="The member has not submitted this payment for approval yet")
+
+    payment.status, payment.paid_at = normalize_payment_fields(
+        amount_due=payment.amount_due,
+        amount_paid=payment.amount_paid,
+        due_date=payment.due_date,
+        paid_at=datetime.now(timezone.utc),
+    )
+    if payload.notes is not None:
+        payment.notes = payload.notes
+
+    db.commit()
+    db.refresh(payment)
+    return annotate_payment(payment)
 
 
 @router.delete("/{payment_id}", status_code=status.HTTP_204_NO_CONTENT)

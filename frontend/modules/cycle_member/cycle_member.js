@@ -19,7 +19,8 @@
       activeKey: "cycles",
       pageTitle,
       canUpdateGroup: Number(group.created_by) === Number(profile.id),
-      canCreateCycle: Number(group.created_by) === Number(profile.id) || role === "admin",
+      canCreateCycle:
+        Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator",
       canAccessAdministration:
         Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator",
       showJoinRequests: group.privacy !== "public",
@@ -158,14 +159,18 @@
     const cycle = await CycleAPI.getCycle(cycleId);
     const group = await GroupAPI.getGroup(cycle.group_id);
     const role = await myRole(cycle.group_id, profile.id).catch(() => null);
-    const canManage = Number(group.created_by) === Number(profile.id) || role === "admin";
+    const canManage =
+      Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator";
+    const canSetupCycle = canManage && cycle.status === "pending";
     applyGroupWorkspace(profile, group, role, "Cycle Participants");
 
     text(qs("#cycle-title"), `Cycle #${cycle.id}`);
     text(qs("#cycle-subtitle"), `${group.name} • payout order defines who gets paid first`);
-    text(qs("#permissions-note"), canManage
-      ? "Creator/admin can add participants, set payout order, and remove entries."
-      : "Participants can view the payout order. Creator/admin manage the order.");
+    text(qs("#permissions-note"), canSetupCycle
+      ? "Admins and moderators can add every group member now, choose joined order or random fill, then start the cycle."
+      : canManage
+        ? "This cycle is no longer pending, so participant setup is locked."
+        : "Participants can view the payout order. Admins and moderators manage the setup before the cycle starts.");
 
     qs("#open-cycle").addEventListener("click", () => APP.navigate(`cycle_detail.html?cycle_id=${cycle.id}&group_id=${cycle.group_id}`));
     qs("#open-group-members").addEventListener("click", () => APP.navigate(`group_members.html?group_id=${cycle.group_id}`));
@@ -237,10 +242,13 @@
       load();
     });
 
-    show(qs("#open-add"), canManage);
+    show(qs("#open-add"), canSetupCycle);
+    show(qs("#fill-group"), canSetupCycle);
 
     const overlay = qs("#modal-overlay");
     const modal = qs("#add-modal");
+    const fillGroupBtn = qs("#fill-group");
+    const fillOrderMode = qs("#fill-order-mode");
 
     function openModal() {
       setMessage("#form-error", "");
@@ -255,7 +263,7 @@
       qs("#add-form").reset();
     }
 
-    if (canManage) {
+    if (canSetupCycle) {
       qs("#open-add").addEventListener("click", openModal);
       qs("#cancel").addEventListener("click", closeModal);
       overlay.addEventListener("click", closeModal);
@@ -291,6 +299,26 @@
           APP.setButtonLoading(qs("#add-submit"), false);
         }
       });
+
+      if (fillGroupBtn) {
+        fillGroupBtn.addEventListener("click", async () => {
+          APP.setButtonLoading(fillGroupBtn, true, "Adding...");
+          try {
+            await CycleMemberAPI.fillMembers({
+              cycle_id: cycle.id,
+              order_mode: fillOrderMode ? fillOrderMode.value : "manual",
+            });
+            APP.showToast("Remaining group members added to the cycle", "success");
+            page = 1;
+            await loadEligibleOptions();
+            await load();
+          } catch (err) {
+            APP.showToast(err.message || "Failed to add the remaining group members.", "error");
+          } finally {
+            APP.setButtonLoading(fillGroupBtn, false);
+          }
+        });
+      }
     }
 
     await loadEligibleOptions();
@@ -313,7 +341,9 @@
     const cycle = await CycleAPI.getCycle(cycleId);
     const group = await GroupAPI.getGroup(cycle.group_id);
     const role = await myRole(cycle.group_id, profile.id).catch(() => null);
-    const canManage = Number(group.created_by) === Number(profile.id) || role === "admin";
+    const canManage =
+      Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator";
+    const canManageSetup = canManage && cycle.status === "pending";
     applyGroupWorkspace(profile, group, role, "Cycle Participant");
 
     qs("#back").addEventListener("click", () => APP.navigate(`cycle_members.html?cycle_id=${cycleId}&group_id=${cycle.group_id}`));
@@ -330,9 +360,11 @@
       text(qs("#subtitle"), `Cycle #${cycle.id} • ${group.name}`);
       text(qs("#participant-title"), `User #${member.user_id}`);
       text(qs("#participant-note"), canManage
-        ? "Creator/admin can change payout order or remove participation."
+        ? (canManageSetup
+          ? "Admins and moderators can change payout order or remove participation while the cycle is pending."
+          : "This cycle is already active, paused, or completed, so the participant setup is locked. The received state is now set automatically when the payout is marked paid.")
         : Number(member.user_id) === Number(profile.id)
-          ? "You can review your participation record here."
+          ? "You can review your participation record here. Your payout receipt is confirmed automatically when your turn is paid."
           : "View only.");
 
       const grid = qs("#participant-grid");
@@ -354,10 +386,7 @@
       });
 
       qs("#payout_order").value = member.payout_order;
-      qs("#received").checked = !!member.received;
-
-      show(qs("#manage-order"), canManage);
-      show(qs("#manage-received"), canManage || Number(member.user_id) === Number(profile.id));
+      show(qs("#manage-order"), canManageSetup);
     }
 
     if (canManage) {
@@ -396,26 +425,6 @@
           APP.showToast(err.message || "Failed to remove participant.", "error");
         } finally {
           APP.setButtonLoading(qs("#remove"), false);
-        }
-      });
-    }
-
-    if (qs("#received-form")) {
-      qs("#received-form").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        setMessage("#received-error", "");
-        setMessage("#received-success", "");
-
-        APP.setButtonLoading(qs("#save-received"), true, "Saving…");
-        try {
-          await CycleMemberAPI.updateMember(member.id, { received: !!qs("#received").checked });
-          setMessage("#received-success", "Received status updated.");
-          APP.showToast("Received status updated", "success");
-          await render();
-        } catch (err) {
-          setMessage("#received-error", err.message || "Failed to update received status.");
-        } finally {
-          APP.setButtonLoading(qs("#save-received"), false);
         }
       });
     }

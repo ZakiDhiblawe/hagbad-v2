@@ -34,6 +34,15 @@ class PaymentUpdate(BaseModel):
     notes: str | None = Field(default=None, max_length=2000)
 
 
+class PaymentSubmission(BaseModel):
+    amount_paid: Decimal | None = Field(default=None, ge=0)
+    notes: str | None = Field(default=None, max_length=2000)
+
+
+class PaymentDecision(BaseModel):
+    notes: str | None = Field(default=None, max_length=2000)
+
+
 class PaymentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -48,6 +57,7 @@ class PaymentOut(BaseModel):
     paid_at: datetime | None
     notes: str | None
     created_at: datetime
+    pending_approval: bool = False
 
 
 class PaymentSummary(BaseModel):

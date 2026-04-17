@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -60,13 +60,37 @@ def is_group_admin_for_cycle(db: Session, cycle_id: int, user_id: int) -> bool:
     )
 
 
+def is_group_moderator_for_cycle(db: Session, cycle_id: int, user_id: int) -> bool:
+    cycle = db.query(Cycle).filter(Cycle.id == cycle_id).first()
+    if not cycle:
+        return False
+    return (
+        db.query(GroupMember)
+        .filter(
+            GroupMember.group_id == cycle.group_id,
+            GroupMember.user_id == user_id,
+            GroupMember.role == GroupMemberRole.moderator,
+        )
+        .first()
+        is not None
+    )
+
+
 def require_cycle_manager(db: Session, cycle_id: int, user_id: int) -> None:
-    if not (is_cycle_creator(db, cycle_id, user_id) or is_group_admin_for_cycle(db, cycle_id, user_id)):
-        raise HTTPException(status_code=403, detail="Only the cycle creator or a group admin can manage payouts")
+    if not (
+        is_cycle_creator(db, cycle_id, user_id)
+        or is_group_admin_for_cycle(db, cycle_id, user_id)
+        or is_group_moderator_for_cycle(db, cycle_id, user_id)
+    ):
+        raise HTTPException(status_code=403, detail="Only a group admin or moderator can manage payouts")
 
 
 def can_view_payout(db: Session, payout: Payout, user_id: int) -> bool:
-    if is_cycle_creator(db, payout.cycle_id, user_id) or is_group_admin_for_cycle(db, payout.cycle_id, user_id):
+    if (
+        is_cycle_creator(db, payout.cycle_id, user_id)
+        or is_group_admin_for_cycle(db, payout.cycle_id, user_id)
+        or is_group_moderator_for_cycle(db, payout.cycle_id, user_id)
+    ):
         return True
     cycle_member = get_cycle_member_or_404(db, payout.cycle_member_id)
     return cycle_member.user_id == user_id
@@ -87,17 +111,56 @@ def ensure_cycle_not_completed(cycle: Cycle) -> None:
         raise HTTPException(status_code=400, detail="Cannot manage payouts for a completed cycle")
 
 
+def ensure_cycle_is_active(cycle: Cycle) -> None:
+    if cycle.status != CycleStatus.active:
+        raise HTTPException(status_code=400, detail="Payouts can only be managed while the cycle is active")
+
+
+def frequency_days(freq, custom_days):
+    if freq == "daily":
+        return 1
+    if freq == "weekly":
+        return 7
+    if freq == "monthly":
+        return 30
+    if freq == "custom_days":
+        if not custom_days:
+            raise HTTPException(status_code=400, detail="custom_days is required for custom cycle frequency")
+        return int(custom_days)
+    raise HTTPException(status_code=400, detail="Invalid cycle frequency")
+
+
+def get_cycle_members_sorted(db: Session, cycle_id: int) -> list[CycleMember]:
+    return (
+        db.query(CycleMember)
+        .filter(CycleMember.cycle_id == cycle_id)
+        .order_by(CycleMember.payout_order.asc(), CycleMember.created_at.asc(), CycleMember.id.asc())
+        .all()
+    )
+
+
+def get_payout_round_date(db: Session, cycle: Cycle, cycle_member_id: int) -> date:
+    members = get_cycle_members_sorted(db, cycle.id)
+    if not members:
+        raise HTTPException(status_code=400, detail="Cycle has no participants")
+    interval_days = frequency_days(cycle.frequency.value, cycle.custom_days)
+    for index, member in enumerate(members):
+        if member.id == cycle_member_id:
+            return cycle.start_date + timedelta(days=interval_days * index)
+    raise HTTPException(status_code=400, detail="Payout cycle member is not part of this cycle")
+
+
 def sync_cycle_payment_statuses(db: Session, cycle_id: int) -> None:
     payments = db.query(Payment).filter(Payment.cycle_id == cycle_id).all()
     changed = False
     for payment in payments:
-        new_status = PaymentStatus.paid if payment.amount_paid >= payment.amount_due else (
-            PaymentStatus.late if payment.due_date < datetime.now(timezone.utc).date() else PaymentStatus.due
-        )
-        new_paid_at = payment.paid_at
-        if new_status == PaymentStatus.paid and payment.paid_at is None:
-            new_paid_at = datetime.now(timezone.utc)
-        if new_status != PaymentStatus.paid:
+        if payment.amount_paid > payment.amount_due:
+            payment.amount_paid = payment.amount_due
+        if payment.amount_paid >= payment.amount_due and payment.paid_at is not None:
+            new_status = PaymentStatus.paid
+            new_paid_at = payment.paid_at
+        else:
+            new_status = PaymentStatus.late if payment.due_date < datetime.now(timezone.utc).date() else PaymentStatus.due
             new_paid_at = None
         if payment.status != new_status or payment.paid_at != new_paid_at:
             payment.status = new_status
@@ -107,14 +170,46 @@ def sync_cycle_payment_statuses(db: Session, cycle_id: int) -> None:
         db.commit()
 
 
-def cycle_has_unsettled_payments(db: Session, cycle_id: int) -> bool:
-    sync_cycle_payment_statuses(db, cycle_id)
+def cycle_has_unsettled_round_payments(db: Session, cycle: Cycle, cycle_member_id: int) -> bool:
+    sync_cycle_payment_statuses(db, cycle.id)
+    round_due_date = get_payout_round_date(db, cycle, cycle_member_id)
     return (
         db.query(Payment)
-        .filter(Payment.cycle_id == cycle_id, Payment.status.in_([PaymentStatus.due, PaymentStatus.late]))
+        .filter(
+            Payment.cycle_id == cycle.id,
+            Payment.due_date == round_due_date,
+            Payment.status.in_([PaymentStatus.due, PaymentStatus.late]),
+        )
         .first()
         is not None
     )
+
+
+def round_payment_total(db: Session, cycle: Cycle, cycle_member_id: int) -> Decimal:
+    round_due_date = get_payout_round_date(db, cycle, cycle_member_id)
+    total = Decimal("0")
+    for payment in db.query(Payment).filter(
+        Payment.cycle_id == cycle.id,
+        Payment.due_date == round_due_date,
+        Payment.status == PaymentStatus.paid,
+    ).all():
+        total += payment.amount_paid
+    return total
+
+
+def previous_rounds_are_paid(db: Session, payout: Payout) -> bool:
+    cycle_member = get_cycle_member_or_404(db, payout.cycle_member_id)
+    previous_unpaid = (
+        db.query(Payout)
+        .join(CycleMember, Payout.cycle_member_id == CycleMember.id)
+        .filter(
+            Payout.cycle_id == payout.cycle_id,
+            CycleMember.payout_order < cycle_member.payout_order,
+            Payout.status != PayoutStatus.paid,
+        )
+        .first()
+    )
+    return previous_unpaid is None
 
 
 def total_paid_into_cycle(db: Session, cycle_id: int) -> Decimal:
@@ -157,6 +252,7 @@ def create_payout(
     cycle = get_cycle_or_404(db, payload.cycle_id)
     require_cycle_manager(db, cycle.id, current_user.id)
     ensure_cycle_not_completed(cycle)
+    ensure_cycle_is_active(cycle)
 
     cycle_member = get_cycle_member_or_404(db, payload.cycle_member_id)
     ensure_cycle_member_matches_cycle(cycle.id, cycle_member)
@@ -202,7 +298,11 @@ def list_payouts(
     current_user: User = Depends(get_current_user),
 ) -> list[Payout]:
     cycle = get_cycle_or_404(db, cycle_id)
-    is_manager = is_cycle_creator(db, cycle.id, current_user.id) or is_group_admin_for_cycle(db, cycle.id, current_user.id)
+    is_manager = (
+        is_cycle_creator(db, cycle.id, current_user.id)
+        or is_group_admin_for_cycle(db, cycle.id, current_user.id)
+        or is_group_moderator_for_cycle(db, cycle.id, current_user.id)
+    )
 
     query = db.query(Payout).filter(Payout.cycle_id == cycle.id)
 
@@ -269,6 +369,7 @@ def update_payout(
     cycle = get_cycle_or_404(db, payout.cycle_id)
     require_cycle_manager(db, cycle.id, current_user.id)
     ensure_cycle_not_completed(cycle)
+    ensure_cycle_is_active(cycle)
 
     if payout.status in (PayoutStatus.approved, PayoutStatus.paid):
         raise HTTPException(status_code=400, detail="Approved or paid payouts cannot be edited directly")
@@ -294,18 +395,20 @@ def approve_payout(
     cycle = get_cycle_or_404(db, payout.cycle_id)
     require_cycle_manager(db, cycle.id, current_user.id)
     ensure_cycle_not_completed(cycle)
+    ensure_cycle_is_active(cycle)
 
     if payout.status == PayoutStatus.paid:
         raise HTTPException(status_code=400, detail="Paid payout is already final")
     if payout.status == PayoutStatus.approved:
         raise HTTPException(status_code=400, detail="Payout is already approved")
-    if cycle_has_unsettled_payments(db, cycle.id):
-        raise HTTPException(status_code=400, detail="All payments in the cycle must be settled before approving payouts")
+    if not previous_rounds_are_paid(db, payout):
+        raise HTTPException(status_code=400, detail="Previous payout rounds must be paid before this turn can be approved")
+    if cycle_has_unsettled_round_payments(db, cycle, payout.cycle_member_id):
+        raise HTTPException(status_code=400, detail="All payments for this payout round must be approved before the payout can be approved")
 
-    collected_total = total_paid_into_cycle(db, cycle.id)
-    committed_total = total_committed_payouts(db, cycle.id, exclude_payout_id=payout.id)
-    if committed_total + payout.amount > collected_total:
-        raise HTTPException(status_code=400, detail="Payout amount exceeds the collected payments available in this cycle")
+    collected_total = round_payment_total(db, cycle, payout.cycle_member_id)
+    if payout.amount > collected_total:
+        raise HTTPException(status_code=400, detail="Payout amount exceeds the approved payments collected for this round")
 
     payout.status = PayoutStatus.approved
     payout.approved_by = current_user.id
@@ -329,6 +432,7 @@ def reject_payout(
     cycle = get_cycle_or_404(db, payout.cycle_id)
     require_cycle_manager(db, cycle.id, current_user.id)
     ensure_cycle_not_completed(cycle)
+    ensure_cycle_is_active(cycle)
 
     if payout.status == PayoutStatus.paid:
         raise HTTPException(status_code=400, detail="Paid payout cannot be rejected")
@@ -359,16 +463,20 @@ def mark_payout_paid(
     cycle = get_cycle_or_404(db, payout.cycle_id)
     require_cycle_manager(db, cycle.id, current_user.id)
     ensure_cycle_not_completed(cycle)
+    ensure_cycle_is_active(cycle)
 
     if payout.status == PayoutStatus.paid:
         raise HTTPException(status_code=400, detail="Payout is already marked as paid")
     if payout.status != PayoutStatus.approved:
         raise HTTPException(status_code=400, detail="Only approved payouts can be marked as paid")
+    if not previous_rounds_are_paid(db, payout):
+        raise HTTPException(status_code=400, detail="Previous payout rounds must be paid before this turn can be paid")
+    if cycle_has_unsettled_round_payments(db, cycle, payout.cycle_member_id):
+        raise HTTPException(status_code=400, detail="All payments for this payout round must be approved before this payout can be paid")
 
-    collected_total = total_paid_into_cycle(db, cycle.id)
-    already_paid_total = total_paid_out_of_cycle(db, cycle.id)
-    if already_paid_total + payout.amount > collected_total:
-        raise HTTPException(status_code=400, detail="Not enough collected payments are available to mark this payout as paid")
+    collected_total = round_payment_total(db, cycle, payout.cycle_member_id)
+    if payout.amount > collected_total:
+        raise HTTPException(status_code=400, detail="Not enough approved round payments are available to mark this payout as paid")
 
     payout.status = PayoutStatus.paid
     payout.paid_at = datetime.now(timezone.utc)
@@ -393,6 +501,7 @@ def delete_payout(
     cycle = get_cycle_or_404(db, payout.cycle_id)
     require_cycle_manager(db, cycle.id, current_user.id)
     ensure_cycle_not_completed(cycle)
+    ensure_cycle_is_active(cycle)
 
     if payout.status in (PayoutStatus.approved, PayoutStatus.paid):
         raise HTTPException(status_code=400, detail="Approved or paid payouts cannot be deleted")

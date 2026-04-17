@@ -51,6 +51,27 @@ def is_group_admin(db: Session, group_id: int, user_id: int) -> bool:
     )
 
 
+def is_group_moderator(db: Session, group_id: int, user_id: int) -> bool:
+    return (
+        db.query(GroupMember)
+        .filter(
+            GroupMember.group_id == group_id,
+            GroupMember.user_id == user_id,
+            GroupMember.role == GroupMemberRole.moderator,
+        )
+        .first()
+        is not None
+    )
+
+
+def is_group_manager(db: Session, group_id: int, user_id: int) -> bool:
+    return (
+        is_group_creator(db, group_id, user_id)
+        or is_group_admin(db, group_id, user_id)
+        or is_group_moderator(db, group_id, user_id)
+    )
+
+
 def is_group_member(db: Session, group_id: int, user_id: int) -> bool:
     if is_group_creator(db, group_id, user_id):
         return True
@@ -67,14 +88,19 @@ def require_creator_or_admin(db: Session, group_id: int, user_id: int) -> None:
         raise HTTPException(status_code=403, detail="Not allowed")
 
 
+def require_group_manager(db: Session, group_id: int, user_id: int) -> None:
+    if not is_group_manager(db, group_id, user_id):
+        raise HTTPException(status_code=403, detail="Only group admins or moderators can manage cycles")
+
+
 def require_member(db: Session, group_id: int, user_id: int) -> None:
     if not is_group_member(db, group_id, user_id):
         raise HTTPException(status_code=403, detail="Not allowed")
 
 
 def require_lifecycle_manager(db: Session, group_id: int, user_id: int) -> None:
-    if not (is_group_creator(db, group_id, user_id) or is_group_admin(db, group_id, user_id)):
-        raise HTTPException(status_code=403, detail="Only the group creator or an admin can change cycle lifecycle")
+    if not is_group_manager(db, group_id, user_id):
+        raise HTTPException(status_code=403, detail="Only a group admin or moderator can change cycle lifecycle")
 
 
 def frequency_days(freq: CycleFrequency, custom_days: int | None) -> int:
@@ -95,6 +121,17 @@ def compute_end_date(start: date, freq: CycleFrequency, custom_days: int | None)
     return start + timedelta(days=frequency_days(freq, custom_days))
 
 
+def compute_cycle_end_date(
+    start: date,
+    freq: CycleFrequency,
+    custom_days: int | None,
+    participant_count: int,
+) -> date:
+    if participant_count <= 1:
+        return start
+    return start + timedelta(days=frequency_days(freq, custom_days) * (participant_count - 1))
+
+
 def get_group_settings(db: Session, group_id: int) -> GroupSettings:
     s = db.query(GroupSettings).filter(GroupSettings.group_id == group_id).first()
     if not s:
@@ -102,12 +139,111 @@ def get_group_settings(db: Session, group_id: int) -> GroupSettings:
     return s
 
 
+def group_has_active_cycle(db: Session, group_id: int, exclude_cycle_id: int | None = None) -> bool:
+    query = db.query(Cycle).filter(
+        Cycle.group_id == group_id,
+        Cycle.status == CycleStatus.active,
+    )
+    if exclude_cycle_id is not None:
+        query = query.filter(Cycle.id != exclude_cycle_id)
+    return query.first() is not None
+
+
+def group_has_open_cycle(db: Session, group_id: int, exclude_cycle_id: int | None = None) -> bool:
+    query = db.query(Cycle).filter(
+        Cycle.group_id == group_id,
+        Cycle.status.in_([CycleStatus.pending, CycleStatus.active, CycleStatus.paused]),
+    )
+    if exclude_cycle_id is not None:
+        query = query.filter(Cycle.id != exclude_cycle_id)
+    return query.first() is not None
+
+
+def get_cycle_members_sorted(db: Session, cycle_id: int) -> list[CycleMember]:
+    return (
+        db.query(CycleMember)
+        .filter(CycleMember.cycle_id == cycle_id)
+        .order_by(CycleMember.payout_order.asc(), CycleMember.created_at.asc(), CycleMember.id.asc())
+        .all()
+    )
+
+
+def get_group_user_ids(db: Session, group: Group) -> set[int]:
+    user_ids = {int(group.created_by)}
+    for (user_id,) in db.query(GroupMember.user_id).filter(GroupMember.group_id == group.id).all():
+        user_ids.add(int(user_id))
+    return user_ids
+
+
+def ensure_cycle_participants_complete(db: Session, cycle: Cycle) -> list[CycleMember]:
+    participants = get_cycle_members_sorted(db, cycle.id)
+    if not participants:
+        raise HTTPException(status_code=400, detail="Add cycle participants before starting the cycle")
+
+    group = get_group_or_404(db, cycle.group_id)
+    group_user_ids = get_group_user_ids(db, group)
+    cycle_user_ids = {int(item.user_id) for item in participants}
+    missing_user_ids = sorted(group_user_ids - cycle_user_ids)
+    if missing_user_ids:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Every group member must be added before starting the cycle. Missing users: {', '.join(str(user_id) for user_id in missing_user_ids)}",
+        )
+
+    return participants
+
+
+def ensure_cycle_round_records(db: Session, cycle: Cycle, created_by: int) -> None:
+    existing_payment = db.query(Payment.id).filter(Payment.cycle_id == cycle.id).first()
+    existing_payout = db.query(Payout.id).filter(Payout.cycle_id == cycle.id).first()
+    if existing_payment or existing_payout:
+        return
+
+    participants = get_cycle_members_sorted(db, cycle.id)
+    if not participants:
+        raise HTTPException(status_code=400, detail="Add cycle participants before starting the cycle")
+
+    settings = get_group_settings(db, cycle.group_id)
+    interval_days = frequency_days(cycle.frequency, cycle.custom_days or settings.custom_days)
+    contribution_amount = settings.contribution_amount
+    round_pool_amount = contribution_amount * len(participants)
+
+    for index, payout_member in enumerate(participants):
+        due_date = cycle.start_date + timedelta(days=interval_days * index)
+        db.add(
+            Payout(
+                cycle_id=cycle.id,
+                cycle_member_id=payout_member.id,
+                created_by=created_by,
+                amount=round_pool_amount,
+                status=PayoutStatus.pending,
+                notes=f"Round {index + 1} payout for payout order #{payout_member.payout_order}",
+            )
+        )
+
+        for contributor in participants:
+            db.add(
+                Payment(
+                    cycle_id=cycle.id,
+                    cycle_member_id=contributor.id,
+                    created_by=created_by,
+                    due_date=due_date,
+                    amount_due=contribution_amount,
+                    amount_paid=0,
+                    status=PaymentStatus.late if due_date < date.today() else PaymentStatus.due,
+                    notes=f"Round {index + 1} contribution payment",
+                )
+            )
+
+
 def sync_cycle_payment_statuses(db: Session, cycle_id: int) -> None:
     payments = db.query(Payment).filter(Payment.cycle_id == cycle_id).all()
     changed = False
     for payment in payments:
-        new_status = PaymentStatus.paid if payment.amount_paid >= payment.amount_due else (
-            PaymentStatus.late if payment.due_date < date.today() else PaymentStatus.due
+        new_status = (
+            PaymentStatus.paid
+            if payment.amount_paid >= payment.amount_due and payment.paid_at is not None
+            else (PaymentStatus.late if payment.due_date < date.today() else PaymentStatus.due)
         )
         if payment.status != new_status:
             payment.status = new_status
@@ -152,10 +288,12 @@ def create_cycle(
     current_user: User = Depends(get_current_user),
 ) -> Cycle:
     group = get_group_or_404(db, payload.group_id)
-    require_creator_or_admin(db, group.id, current_user.id)
+    require_group_manager(db, group.id, current_user.id)
 
     if group.status != GroupStatus.active:
         raise HTTPException(status_code=400, detail="Cannot create a cycle for a closed group")
+    if group_has_open_cycle(db, group.id):
+        raise HTTPException(status_code=400, detail="Only one pending, paused, or active cycle is allowed at a time for this group")
 
     cycle = Cycle(
         group_id=group.id,
@@ -163,14 +301,8 @@ def create_cycle(
         start_date=payload.start_date,
         frequency=payload.frequency,
         custom_days=payload.custom_days,
-        status=CycleStatus.active if payload.auto_start else CycleStatus.pending,
+        status=CycleStatus.pending,
     )
-
-    # If auto_start, compute end_date (prefer group_settings.custom_days if needed)
-    if payload.auto_start:
-        settings = get_group_settings(db, group.id)
-        cd = cycle.custom_days or settings.custom_days
-        cycle.end_date = compute_end_date(cycle.start_date, cycle.frequency, cd)
 
     db.add(cycle)
     try:
@@ -230,13 +362,21 @@ def start_cycle(
         raise HTTPException(status_code=400, detail="Cycle is already active")
     if get_group_or_404(db, cycle.group_id).status != GroupStatus.active:
         raise HTTPException(status_code=400, detail="Cannot start a cycle in a closed group")
+    if group_has_active_cycle(db, cycle.group_id, exclude_cycle_id=cycle.id):
+        raise HTTPException(status_code=400, detail="Another cycle is already active for this group")
 
-    cycle.status = CycleStatus.active
-
-    # compute end_date using group_settings for custom_days fallback
+    participants = ensure_cycle_participants_complete(db, cycle)
     settings = get_group_settings(db, cycle.group_id)
     cd = cycle.custom_days or settings.custom_days
-    cycle.end_date = compute_end_date(cycle.start_date, cycle.frequency, cd)
+    cycle.end_date = compute_cycle_end_date(
+        cycle.start_date,
+        cycle.frequency,
+        cd,
+        len(participants),
+    )
+    ensure_cycle_round_records(db, cycle, current_user.id)
+
+    cycle.status = CycleStatus.active
 
     db.commit()
     db.refresh(cycle)
@@ -280,12 +420,14 @@ def update_cycle(
     current_user: User = Depends(get_current_user),
 ) -> Cycle:
     cycle = get_cycle_or_404(db, cycle_id)
-    require_creator_or_admin(db, cycle.group_id, current_user.id)
+    require_group_manager(db, cycle.group_id, current_user.id)
 
     if cycle.status == CycleStatus.completed:
         raise HTTPException(status_code=400, detail="Cannot update a completed cycle")
     if payload.status is not None:
         raise HTTPException(status_code=400, detail="Use the start/stop endpoints for lifecycle changes")
+    if cycle.status != CycleStatus.pending:
+        raise HTTPException(status_code=400, detail="Only pending cycles can be edited")
 
     if payload.frequency is not None:
         cycle.frequency = payload.frequency

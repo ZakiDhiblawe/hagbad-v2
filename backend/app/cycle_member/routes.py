@@ -1,11 +1,12 @@
+import random
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.cycle_member.models import CycleMember
-from app.cycle_member.schemas import CycleMemberCreate, CycleMemberOut, CycleMemberUpdate
-from app.cycle.models import Cycle
+from app.cycle_member.schemas import CycleMemberBulkFill, CycleMemberCreate, CycleMemberOut, CycleMemberUpdate
+from app.cycle.models import Cycle, CycleStatus
 from app.group.models import Group
 from app.group_member.models import GroupMember, GroupMemberRole
 from app.payment.models import Payment
@@ -14,6 +15,13 @@ from app.user.models import User
 from utility.security import get_db, get_current_user
 
 router = APIRouter(prefix="/cycle-members", tags=["cycle_members"])
+
+
+def get_cycle_or_404(db: Session, cycle_id: int) -> Cycle:
+    cycle = db.query(Cycle).filter(Cycle.id == cycle_id).first()
+    if not cycle:
+        raise HTTPException(status_code=404, detail="Cycle not found")
+    return cycle
 
 def is_cycle_creator(db: Session, cycle_id: int, user_id: int) -> bool:
     c = db.query(Cycle).filter(Cycle.id == cycle_id).first()
@@ -28,6 +36,26 @@ def is_group_admin(db: Session, cycle_id: int, user_id: int) -> bool:
         GroupMember.role == GroupMemberRole.admin
     ).first()
     return bool(gm)
+
+
+def is_group_moderator(db: Session, cycle_id: int, user_id: int) -> bool:
+    c = db.query(Cycle).filter(Cycle.id == cycle_id).first()
+    if not c:
+        return False
+    gm = db.query(GroupMember).filter(
+        GroupMember.group_id == c.group_id,
+        GroupMember.user_id == user_id,
+        GroupMember.role == GroupMemberRole.moderator
+    ).first()
+    return bool(gm)
+
+
+def is_cycle_manager(db: Session, cycle_id: int, user_id: int) -> bool:
+    return (
+        is_cycle_creator(db, cycle_id, user_id)
+        or is_group_admin(db, cycle_id, user_id)
+        or is_group_moderator(db, cycle_id, user_id)
+    )
 
 def is_cycle_participant(db: Session, cycle_id: int, user_id: int) -> bool:
     if is_cycle_creator(db, cycle_id, user_id): return True
@@ -52,7 +80,7 @@ def is_group_member_for_cycle(db: Session, cycle_id: int, user_id: int) -> bool:
     ).first())
 
 def can_view_cycle_members(db: Session, cycle_id: int, user_id: int) -> bool:
-    return is_cycle_participant(db, cycle_id, user_id) or is_group_admin(db, cycle_id, user_id)
+    return is_cycle_participant(db, cycle_id, user_id) or is_cycle_manager(db, cycle_id, user_id)
 
 def payout_order_taken(db: Session, cycle_id: int, payout_order: int, exclude_member_id: int | None = None) -> bool:
     query = db.query(CycleMember).filter(
@@ -67,14 +95,39 @@ def cycle_has_payout_records(db: Session, cycle_id: int) -> bool:
     return db.query(Payout).filter(Payout.cycle_id == cycle_id).first() is not None
 
 def require_admin_or_creator(db: Session, cycle_id: int, user_id: int):
-    if not (is_cycle_creator(db, cycle_id, user_id) or is_group_admin(db, cycle_id, user_id)):
-        raise HTTPException(status_code=403, detail="Not allowed")
+    if not is_cycle_manager(db, cycle_id, user_id):
+        raise HTTPException(status_code=403, detail="Only a group admin or moderator can manage cycle participants")
+
+
+def ensure_cycle_is_pending_setup(db: Session, cycle_id: int) -> Cycle:
+    cycle = get_cycle_or_404(db, cycle_id)
+    if cycle.status != CycleStatus.pending:
+        raise HTTPException(status_code=400, detail="Cycle participants can only be changed while the cycle is pending")
+    return cycle
+
+
+def get_group_member_rows_for_cycle(db: Session, cycle_id: int) -> list[GroupMember]:
+    cycle = get_cycle_or_404(db, cycle_id)
+    return (
+        db.query(GroupMember)
+        .filter(GroupMember.group_id == cycle.group_id)
+        .order_by(GroupMember.joined_at.asc(), GroupMember.id.asc())
+        .all()
+    )
+
+
+def get_cycle_member_user_ids(db: Session, cycle_id: int) -> set[int]:
+    return {
+        int(user_id)
+        for (user_id,) in db.query(CycleMember.user_id).filter(CycleMember.cycle_id == cycle_id).all()
+    }
 
 @router.post("/", response_model=CycleMemberOut, status_code=status.HTTP_201_CREATED)
 def add_member(payload: CycleMemberCreate,
                db: Session = Depends(get_db),
                current_user: User = Depends(get_current_user)) -> CycleMember:
     require_admin_or_creator(db, payload.cycle_id, current_user.id)
+    ensure_cycle_is_pending_setup(db, payload.cycle_id)
     if not is_group_member_for_cycle(db, payload.cycle_id, payload.user_id):
         raise HTTPException(status_code=400, detail="User must already belong to the group before joining a cycle")
     if payload.payout_order is None:
@@ -97,6 +150,59 @@ def add_member(payload: CycleMemberCreate,
         raise HTTPException(status_code=400, detail="Member or order conflict")
     db.refresh(member)
     return member
+
+
+@router.post("/fill", response_model=list[CycleMemberOut], status_code=status.HTTP_201_CREATED)
+def fill_cycle_members(
+    payload: CycleMemberBulkFill,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[CycleMember]:
+    require_admin_or_creator(db, payload.cycle_id, current_user.id)
+    ensure_cycle_is_pending_setup(db, payload.cycle_id)
+
+    existing_user_ids = get_cycle_member_user_ids(db, payload.cycle_id)
+    group_member_rows = get_group_member_rows_for_cycle(db, payload.cycle_id)
+
+    eligible_user_ids = [
+        int(item.user_id)
+        for item in group_member_rows
+        if int(item.user_id) not in existing_user_ids
+    ]
+    if not eligible_user_ids:
+        raise HTTPException(status_code=400, detail="Every group member is already in this cycle")
+
+    if payload.order_mode == "random":
+        random.shuffle(eligible_user_ids)
+
+    max_member = (
+        db.query(CycleMember)
+        .filter(CycleMember.cycle_id == payload.cycle_id)
+        .order_by(CycleMember.payout_order.desc())
+        .first()
+    )
+    next_order = max_member.payout_order + 1 if max_member else 1
+
+    created: list[CycleMember] = []
+    for user_id in eligible_user_ids:
+        member = CycleMember(
+            cycle_id=payload.cycle_id,
+            user_id=user_id,
+            payout_order=next_order,
+        )
+        db.add(member)
+        created.append(member)
+        next_order += 1
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Could not add the remaining group members to this cycle")
+
+    for member in created:
+        db.refresh(member)
+    return created
 
 @router.get("/", response_model=list[CycleMemberOut])
 def list_members(cycle_id: int = Query(..., ge=1),
@@ -132,6 +238,7 @@ def update_member(member_id: int,
     m = db.query(CycleMember).filter(CycleMember.id == member_id).first()
     if not m:
         raise HTTPException(status_code=404, detail="Not found")
+    ensure_cycle_is_pending_setup(db, m.cycle_id)
     if payload.payout_order is not None:
         require_admin_or_creator(db, m.cycle_id, current_user.id)
         if cycle_has_payout_records(db, m.cycle_id):
@@ -154,6 +261,7 @@ def delete_member(member_id: int,
     if not m:
         raise HTTPException(status_code=404, detail="Not found")
     require_admin_or_creator(db, m.cycle_id, current_user.id)
+    ensure_cycle_is_pending_setup(db, m.cycle_id)
     if cycle_has_payout_records(db, m.cycle_id):
         raise HTTPException(status_code=400, detail="Cannot remove a cycle member after payout records have been created")
     if db.query(Payment).filter(Payment.cycle_member_id == m.id).first():

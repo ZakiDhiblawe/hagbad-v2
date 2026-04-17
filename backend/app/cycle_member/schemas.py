@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 
@@ -8,6 +9,11 @@ class CycleMemberCreate(BaseModel):
     cycle_id: int = Field(..., ge=1)
     user_id: int = Field(..., ge=1)
     payout_order: Optional[int] = Field(default=None, ge=1)
+
+
+class CycleMemberBulkFill(BaseModel):
+    cycle_id: int = Field(..., ge=1)
+    order_mode: Literal["manual", "random"] = "manual"
 
 class CycleMemberUpdate(BaseModel):
     payout_order: Optional[int] = Field(default=None, ge=1)

@@ -19,7 +19,8 @@
       activeKey: "cycles",
       pageTitle,
       canUpdateGroup: Number(group.created_by) === Number(profile.id),
-      canCreateCycle: Number(group.created_by) === Number(profile.id) || role === "admin",
+      canCreateCycle:
+        Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator",
       canAccessAdministration:
         Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator",
       showJoinRequests: group.privacy !== "public",
@@ -230,14 +231,15 @@
     const cycle = await CycleAPI.getCycle(cycleId);
     const group = await GroupAPI.getGroup(cycle.group_id);
     const role = await myRole(cycle.group_id, profile.id).catch(() => null);
-    const canManage = Number(group.created_by) === Number(profile.id) || role === "admin";
+    const canManage =
+      Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator";
     applyGroupWorkspace(profile, group, role, "Payouts");
 
     text(qs("#cycle-title"), `Payouts for cycle #${cycle.id}`);
-    text(qs("#cycle-subtitle"), `${group.name} • admin approval and payout completion`);
+    text(qs("#cycle-subtitle"), `${group.name} • round turn approval and payout completion`);
     const permissionsNote = canManage
-      ? "Creator/admin can create, approve, reject, and mark payouts paid."
-      : "You can view only your own payout records.";
+      ? "One payout record is generated for each turn when the cycle starts. Admins and moderators approve and pay the active turn after that round's payments are approved."
+      : "You can view only your own payout turn and its status.";
     text(qs("#permissions-note"), permissionsNote);
     text(qs("#permissions-note-main"), permissionsNote);
 
@@ -275,7 +277,7 @@
       }
     }
 
-    show(qs("#open-create"), canManage);
+    show(qs("#open-create"), false);
 
     let page = 1;
     let status = "";
@@ -428,7 +430,8 @@
     const cycle = await CycleAPI.getCycle(payout.cycle_id);
     const group = await GroupAPI.getGroup(cycle.group_id);
     const role = await myRole(cycle.group_id, profile.id).catch(() => null);
-    const canManage = Number(group.created_by) === Number(profile.id) || role === "admin";
+    const canManage =
+      Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator";
     applyGroupWorkspace(profile, group, role, "Payout Detail");
 
     qs("#back").addEventListener("click", () => {
@@ -440,7 +443,7 @@
       text(qs("#payout-title"), `Payout #${payout.id}`);
       text(qs("#subtitle"), `Cycle #${payout.cycle_id} • ${group.name}`);
       text(qs("#payout-note"), canManage
-        ? "Creator/admin can review, approve, reject, or mark this payout as paid."
+        ? "Approve this payout only after all payments for this round are approved, then mark it paid when the turn holder receives the funds."
         : "View only.");
 
       const statusBadge = qs("#payout-status");
