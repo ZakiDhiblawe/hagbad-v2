@@ -174,7 +174,7 @@
         approve.type = "button";
         approve.textContent = "Approve";
         approve.addEventListener("click", async () => {
-          APP.setButtonLoading(approve, true, "Approving…");
+          APP.setButtonLoading(approve, true, "Approving…", true);
           try {
             await PayoutAPI.approvePayout(payout.id, {});
             APP.showToast("Payout approved", "success");
@@ -195,7 +195,7 @@
         markPaid.type = "button";
         markPaid.textContent = "Mark paid";
         markPaid.addEventListener("click", async () => {
-          APP.setButtonLoading(markPaid, true, "Paying…");
+          APP.setButtonLoading(markPaid, true, "Paying…", true);
           try {
             await PayoutAPI.markPaid(payout.id, {});
             APP.showToast("Payout marked paid", "success");
@@ -511,7 +511,7 @@
       });
 
       qs("#approve").addEventListener("click", async () => {
-        APP.setButtonLoading(qs("#approve"), true, "Approving…");
+        APP.setButtonLoading(qs("#approve"), true, "Approving…", true);
         try {
           await PayoutAPI.approvePayout(payout.id, { notes: qs("#decision_notes").value.trim() || null });
           APP.showToast("Payout approved", "success");
@@ -524,7 +524,7 @@
       });
 
       qs("#reject").addEventListener("click", async () => {
-        APP.setButtonLoading(qs("#reject"), true, "Rejecting…");
+        APP.setButtonLoading(qs("#reject"), true, "Rejecting…", true);
         try {
           await PayoutAPI.rejectPayout(payout.id, { notes: qs("#decision_notes").value.trim() || null });
           APP.showToast("Payout rejected", "success");
@@ -537,7 +537,7 @@
       });
 
       qs("#mark-paid").addEventListener("click", async () => {
-        APP.setButtonLoading(qs("#mark-paid"), true, "Paying…");
+        APP.setButtonLoading(qs("#mark-paid"), true, "Paying…", true);
         try {
           await PayoutAPI.markPaid(payout.id, { notes: qs("#decision_notes").value.trim() || null });
           APP.showToast("Payout marked paid", "success");

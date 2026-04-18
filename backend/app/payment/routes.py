@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.cycle.models import Cycle, CycleStatus
+from app.cycle.models import Cycle, CycleFrequency, CycleStatus
 from app.cycle_member.models import CycleMember
 from app.group_member.models import GroupMember, GroupMemberRole
 from app.group_settings.models import GroupSettings
@@ -180,16 +180,57 @@ def ensure_cycle_can_accept_payments(cycle: Cycle) -> None:
         raise HTTPException(status_code=400, detail="Cannot create payments for a completed cycle")
 
 
-def has_locked_payout_for_cycle_member(db: Session, cycle_member_id: int) -> bool:
+def get_cycle_members_sorted(db: Session, cycle_id: int) -> list[CycleMember]:
     return (
+        db.query(CycleMember)
+        .filter(CycleMember.cycle_id == cycle_id)
+        .order_by(CycleMember.payout_order.asc(), CycleMember.created_at.asc(), CycleMember.id.asc())
+        .all()
+    )
+
+
+def frequency_days(freq: CycleFrequency, custom_days: int | None) -> int:
+    if freq == CycleFrequency.daily:
+        return 1
+    if freq == CycleFrequency.weekly:
+        return 7
+    if freq == CycleFrequency.monthly:
+        return 30
+    if freq == CycleFrequency.custom_days:
+        if not custom_days:
+            raise HTTPException(status_code=400, detail="custom_days is required for custom_days frequency")
+        return int(custom_days)
+    raise HTTPException(status_code=400, detail="Invalid frequency")
+
+
+def get_member_payout_round_due_date(db: Session, cycle: Cycle, cycle_member_id: int) -> date:
+    custom_days = cycle.custom_days
+    if cycle.frequency == CycleFrequency.custom_days and custom_days is None:
+        custom_days = get_group_settings_or_404(db, cycle.group_id).custom_days
+
+    interval_days = frequency_days(cycle.frequency, custom_days)
+    members = get_cycle_members_sorted(db, cycle.id)
+    for index, member in enumerate(members):
+        if member.id == cycle_member_id:
+            return cycle.start_date + timedelta(days=interval_days * index)
+
+    raise HTTPException(status_code=400, detail="Cycle member does not belong to this cycle")
+
+
+def payment_is_locked_by_processed_payout(db: Session, payment: Payment, cycle: Cycle) -> bool:
+    payout = (
         db.query(Payout)
         .filter(
-            Payout.cycle_member_id == cycle_member_id,
+            Payout.cycle_member_id == payment.cycle_member_id,
             Payout.status.in_([PayoutStatus.approved, PayoutStatus.paid]),
         )
         .first()
-        is not None
     )
+    if not payout:
+        return False
+
+    payout_round_due_date = get_member_payout_round_due_date(db, cycle, payment.cycle_member_id)
+    return payment.due_date <= payout_round_due_date
 
 
 def safe_decimal_sum(values: list[Decimal]) -> Decimal:
@@ -362,8 +403,11 @@ def update_payment(
     cycle = get_cycle_or_404(db, payment.cycle_id)
     require_cycle_manager(db, payment.cycle_id, current_user.id)
     ensure_cycle_can_accept_payments(cycle)
-    if has_locked_payout_for_cycle_member(db, payment.cycle_member_id):
-        raise HTTPException(status_code=400, detail="Cannot edit payments after a payout has been approved or paid for this participant")
+    if payment_is_locked_by_processed_payout(db, payment, cycle):
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot edit payments from rounds already locked by an approved or paid payout",
+        )
 
     if payload.due_date is not None:
         payment.due_date = payload.due_date
@@ -406,8 +450,11 @@ def submit_payment(
         raise HTTPException(status_code=403, detail="Only the payment owner can submit this payment")
     if payment.status == PaymentStatus.paid or payment.paid_at is not None:
         raise HTTPException(status_code=400, detail="This payment is already approved")
-    if has_locked_payout_for_cycle_member(db, payment.cycle_member_id):
-        raise HTTPException(status_code=400, detail="Cannot submit payments after a payout has been approved or paid for this participant")
+    if payment_is_locked_by_processed_payout(db, payment, cycle):
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot submit payments for rounds already locked by an approved or paid payout",
+        )
 
     submitted_amount = payload.amount_paid if payload.amount_paid is not None else payment.amount_due
     if submitted_amount != payment.amount_due:
@@ -470,8 +517,11 @@ def delete_payment(
     cycle = get_cycle_or_404(db, payment.cycle_id)
     require_cycle_manager(db, payment.cycle_id, current_user.id)
     ensure_cycle_can_accept_payments(cycle)
-    if has_locked_payout_for_cycle_member(db, payment.cycle_member_id):
-        raise HTTPException(status_code=400, detail="Cannot delete payments after a payout has been approved or paid for this participant")
+    if payment_is_locked_by_processed_payout(db, payment, cycle):
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete payments from rounds already locked by an approved or paid payout",
+        )
 
     if payment.amount_paid > 0 or payment.status == PaymentStatus.paid:
         raise HTTPException(status_code=400, detail="Paid payment records cannot be deleted")

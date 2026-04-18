@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -168,6 +169,42 @@ def sync_cycle_payment_statuses(db: Session, cycle_id: int) -> None:
             changed = True
     if changed:
         db.commit()
+
+
+def cycle_is_ready_for_auto_completion(db: Session, cycle: Cycle) -> bool:
+    cycle_member_total = db.query(CycleMember).filter(CycleMember.cycle_id == cycle.id).count()
+    if cycle_member_total == 0:
+        return False
+
+    payout_total = db.query(Payout).filter(Payout.cycle_id == cycle.id).count()
+    if payout_total != cycle_member_total:
+        return False
+
+    unpaid_payout_exists = (
+        db.query(Payout.id)
+        .filter(Payout.cycle_id == cycle.id, Payout.status != PayoutStatus.paid)
+        .first()
+        is not None
+    )
+    if unpaid_payout_exists:
+        return False
+
+    unsettled_payment_exists = (
+        db.query(Payment.id)
+        .filter(Payment.cycle_id == cycle.id)
+        .filter(
+            or_(
+                Payment.amount_paid < Payment.amount_due,
+                Payment.paid_at.is_(None),
+            )
+        )
+        .first()
+        is not None
+    )
+    if unsettled_payment_exists:
+        return False
+
+    return True
 
 
 def cycle_has_unsettled_round_payments(db: Session, cycle: Cycle, cycle_member_id: int) -> bool:
@@ -485,6 +522,12 @@ def mark_payout_paid(
 
     cycle_member = get_cycle_member_or_404(db, payout.cycle_member_id)
     cycle_member.received = True
+
+    db.flush()
+    if cycle_is_ready_for_auto_completion(db, cycle):
+        cycle.status = CycleStatus.completed
+        if cycle.end_date is None:
+            cycle.end_date = date.today()
 
     db.commit()
     db.refresh(payout)

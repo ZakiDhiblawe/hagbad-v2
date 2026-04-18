@@ -38,6 +38,69 @@
     el.textContent = message || "";
   }
 
+  function capitalize(value) {
+    if (!value) return "Member";
+    return String(value).charAt(0).toUpperCase() + String(value).slice(1);
+  }
+
+  function resolveDisplayName(member, userId) {
+    if (member && member.full_name) return member.full_name;
+    return `Member #${userId}`;
+  }
+
+  function profileTone(member) {
+    const role = String(member?.role || "").toLowerCase();
+    if (role === "admin") return "admin";
+    if (role === "moderator") return "moderator";
+    return "member";
+  }
+
+  function buildMemberDirectory(groupMembers, ownerId) {
+    const directory = new Map(
+      (groupMembers || []).map((member) => [Number(member.user_id), member])
+    );
+    if (ownerId && !directory.has(Number(ownerId))) {
+      directory.set(Number(ownerId), {
+        user_id: Number(ownerId),
+        role: "admin",
+        full_name: null,
+        profile_image: null,
+      });
+    }
+    return directory;
+  }
+
+  function createContextChip(label, tone = "") {
+    const chip = document.createElement("span");
+    chip.className = `member-context-chip ${tone}`.trim();
+    chip.textContent = label;
+    return chip;
+  }
+
+  function buildOrderState(members, groupMembers, ownerId) {
+    const requiredMemberIds = new Set(
+      [Number(ownerId), ...(groupMembers || []).map((item) => Number(item.user_id))]
+        .filter((value) => Number.isFinite(value) && value > 0)
+    );
+    const orders = members
+      .map((item) => Number(item.payout_order))
+      .filter((value) => Number.isFinite(value) && value > 0)
+      .sort((a, b) => a - b);
+
+    const uniqueOrders = new Set(orders);
+    const orderReady = members.length > 0
+      && orders.length === members.length
+      && uniqueOrders.size === orders.length
+      && orders.every((value, index) => value === index + 1);
+
+    return {
+      participantsAdded: members.length,
+      requiredCount: requiredMemberIds.size || members.length,
+      participantsComplete: members.length >= (requiredMemberIds.size || members.length),
+      orderReady,
+    };
+  }
+
   async function ensureProfile() {
     const token = APP.requireAuthOrRedirect();
     if (!token) return null;
@@ -84,7 +147,7 @@
     return all;
   }
 
-  function renderMembers(items, cycleId, groupId, canManage) {
+  function renderMembers(items, cycleId, groupId, canManage, memberDirectory, profileId) {
     const list = qs("#participants-list");
     list.innerHTML = "";
 
@@ -97,36 +160,58 @@
     }
 
     items.forEach((member) => {
+      const profileMember = memberDirectory.get(Number(member.user_id)) || null;
+      const displayName = resolveDisplayName(profileMember, member.user_id);
+      const tone = profileTone(profileMember);
       const li = document.createElement("li");
       li.className = "list-item";
 
       const left = document.createElement("div");
       left.className = "list-main";
 
+      const profileWrap = document.createElement("div");
+      profileWrap.className = "group-member-main";
+
+      const avatarShell = document.createElement("div");
+      avatarShell.className = `group-member-avatar-shell tone-${tone}`;
+
+      const avatar = document.createElement("img");
+      avatar.className = "group-member-avatar";
+      avatar.alt = `${displayName} profile image`;
+      avatar.src = APP.getProfileImageUrl(profileMember);
+      avatar.onerror = () => {
+        avatar.onerror = null;
+        avatar.src = APP.getDefaultProfileImage();
+      };
+      avatarShell.appendChild(avatar);
+
+      const copy = document.createElement("div");
+      copy.className = "group-member-copy";
+
       const title = document.createElement("div");
       title.className = "list-title";
-      title.textContent = `User #${member.user_id}`;
+      title.textContent = displayName;
 
       const meta = document.createElement("div");
       meta.className = "list-meta";
-      meta.textContent = `Payout order #${member.payout_order} • added ${new Date(member.created_at).toLocaleString()}`;
+      meta.textContent = `Cycle member #${member.id} • ${capitalize(profileMember?.role)} • added ${new Date(member.created_at).toLocaleString()}`;
 
       const badges = document.createElement("div");
-      badges.style.marginTop = "8px";
+      badges.className = "badge-row";
+      badges.appendChild(createContextChip(`Order #${member.payout_order}`, "moderator"));
+      badges.appendChild(createContextChip(member.received ? "Received" : "Waiting turn", member.received ? "admin" : "member"));
+      if (Number(member.user_id) === Number(profileId)) {
+        badges.appendChild(createContextChip("You", "admin"));
+      }
 
-      const payoutBadge = document.createElement("span");
-      payoutBadge.className = "badge warn";
-      payoutBadge.textContent = `order ${member.payout_order}`;
-      badges.appendChild(payoutBadge);
+      copy.appendChild(title);
+      copy.appendChild(meta);
+      copy.appendChild(badges);
 
-      const receivedBadge = document.createElement("span");
-      receivedBadge.className = `badge ${member.received ? "good" : ""}`;
-      receivedBadge.textContent = member.received ? "received" : "pending";
-      badges.appendChild(receivedBadge);
+      profileWrap.appendChild(avatarShell);
+      profileWrap.appendChild(copy);
 
-      left.appendChild(title);
-      left.appendChild(meta);
-      left.appendChild(badges);
+      left.appendChild(profileWrap);
 
       const actions = document.createElement("div");
       actions.className = "list-actions";
@@ -162,15 +247,15 @@
     const canManage =
       Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator";
     const canSetupCycle = canManage && cycle.status === "pending";
-    applyGroupWorkspace(profile, group, role, "Cycle Participants");
+    applyGroupWorkspace(profile, group, role, "Cycle Order");
 
-    text(qs("#cycle-title"), `Cycle #${cycle.id}`);
-    text(qs("#cycle-subtitle"), `${group.name} • payout order defines who gets paid first`);
+    text(qs("#cycle-title"), `Review payout order for cycle #${cycle.id}`);
+    text(qs("#cycle-subtitle"), `${group.name} • confirm member names and who gets each payout turn first`);
     text(qs("#permissions-note"), canSetupCycle
-      ? "Admins and moderators can add every group member now, choose joined order or random fill, then start the cycle."
+      ? "Admins and moderators can add every group member, confirm the payout order using real member names, then finish this step before starting the cycle."
       : canManage
-        ? "This cycle is no longer pending, so participant setup is locked."
-        : "Participants can view the payout order. Admins and moderators manage the setup before the cycle starts.");
+        ? "This cycle is no longer pending, so the payout order is locked for review only."
+        : "Participants can view the payout order here. Admins and moderators manage the setup before the cycle starts.");
 
     qs("#open-cycle").addEventListener("click", () => APP.navigate(`cycle_detail.html?cycle_id=${cycle.id}&group_id=${cycle.group_id}`));
     qs("#open-group-members").addEventListener("click", () => APP.navigate(`group_members.html?group_id=${cycle.group_id}`));
@@ -178,10 +263,38 @@
     let page = 1;
     let orderFilter = "";
     let allGroupMembers = [];
+    let memberDirectory = buildMemberDirectory([], group.created_by);
+
+    const doneOrderBtn = qs("#done-order");
+    show(doneOrderBtn, canSetupCycle);
+    if (doneOrderBtn) {
+      doneOrderBtn.addEventListener("click", async () => {
+        try {
+          const participants = await fetchAllCycleMembers(cycle.id);
+          const orderState = buildOrderState(participants, allGroupMembers, group.created_by);
+          if (!orderState.participantsAdded) {
+            APP.showToast("Add members to this cycle before finishing the order step.", "info");
+            return;
+          }
+          if (!orderState.participantsComplete) {
+            APP.showToast("Add every group member before marking the order step done.", "info");
+            return;
+          }
+          if (!orderState.orderReady) {
+            APP.showToast("Make the payout order consecutive from 1 to the last member before marking done.", "info");
+            return;
+          }
+          APP.navigate(`cycle_detail.html?cycle_id=${cycle.id}&group_id=${cycle.group_id}`);
+        } catch (e) {
+          APP.showToast(e.message || "Could not confirm the payout order yet.", "error");
+        }
+      });
+    }
 
     async function loadEligibleOptions() {
       try {
         allGroupMembers = await fetchAllGroupMembers(cycle.group_id);
+        memberDirectory = buildMemberDirectory(allGroupMembers, group.created_by);
         const participants = await fetchAllCycleMembers(cycle.id);
         const participantIds = new Set(participants.map((item) => Number(item.user_id)));
         const eligible = allGroupMembers.filter((item) => !participantIds.has(Number(item.user_id)));
@@ -196,7 +309,7 @@
         eligible.forEach((item) => {
           const option = document.createElement("option");
           option.value = String(item.user_id);
-          option.textContent = `User #${item.user_id} (${item.role})`;
+          option.textContent = `${resolveDisplayName(item, item.user_id)} (${capitalize(item.role)})`;
           select.appendChild(option);
         });
 
@@ -218,7 +331,7 @@
           size: PAGE_SIZE,
           order: orderFilter || "",
         });
-        renderMembers(items, cycle.id, cycle.group_id, canManage);
+        renderMembers(items, cycle.id, cycle.group_id, canManage, memberDirectory, profile.id);
         text(qs("#page-label"), `Page ${page}`);
         qs("#prev").disabled = page <= 1;
         qs("#next").disabled = items.length < PAGE_SIZE;
@@ -344,6 +457,10 @@
     const canManage =
       Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator";
     const canManageSetup = canManage && cycle.status === "pending";
+    const memberDirectory = buildMemberDirectory(
+      await fetchAllGroupMembers(cycle.group_id).catch(() => []),
+      group.created_by
+    );
     applyGroupWorkspace(profile, group, role, "Cycle Participant");
 
     qs("#back").addEventListener("click", () => APP.navigate(`cycle_members.html?cycle_id=${cycleId}&group_id=${cycle.group_id}`));
@@ -357,8 +474,10 @@
     let member;
     async function render() {
       member = await CycleMemberAPI.getMember(memberId);
-      text(qs("#subtitle"), `Cycle #${cycle.id} • ${group.name}`);
-      text(qs("#participant-title"), `User #${member.user_id}`);
+      const profileMember = memberDirectory.get(Number(member.user_id)) || null;
+      const displayName = resolveDisplayName(profileMember, member.user_id);
+      text(qs("#subtitle"), `Order #${member.payout_order} • Cycle #${cycle.id} • ${group.name}`);
+      text(qs("#participant-title"), displayName);
       text(qs("#participant-note"), canManage
         ? (canManageSetup
           ? "Admins and moderators can change payout order or remove participation while the cycle is pending."
@@ -370,6 +489,8 @@
       const grid = qs("#participant-grid");
       grid.innerHTML = "";
       [
+        ["Member name", displayName],
+        ["Group role", capitalize(profileMember?.role)],
         ["Cycle member ID", member.id],
         ["Cycle ID", member.cycle_id],
         ["User ID", member.user_id],

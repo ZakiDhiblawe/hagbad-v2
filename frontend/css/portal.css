@@ -2753,6 +2753,29 @@ body.portal-body {
     box-shadow: none;
 }
 
+.portal-body .btn.is-loading {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+}
+
+.portal-body .btn.is-loading::after {
+    content: "";
+    width: 0.9rem;
+    height: 0.9rem;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: portal-btn-spin 0.75s linear infinite;
+}
+
+@keyframes portal-btn-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .portal-body .btn-secondary {
     border-color: rgba(16, 35, 63, 0.14);
     color: var(--portal-ink);

@@ -158,15 +158,25 @@
         }, timeoutMs);
     }
 
-    function setButtonLoading(btn, loading, loadingText = "Please wait...") {
+    function setButtonLoading(btn, loading, loadingText = "Please wait...", preserveText = false) {
         if (!btn) return;
         if (loading) {
             btn.dataset.originalText = btn.textContent;
-            btn.textContent = loadingText;
+            btn.dataset.preserveText = preserveText ? "true" : "false";
+            if (!preserveText) {
+                btn.textContent = loadingText;
+            }
             btn.disabled = true;
+            btn.classList.add("is-loading");
+            btn.setAttribute("aria-busy", "true");
         } else {
-            btn.textContent = btn.dataset.originalText || btn.textContent;
+            if (btn.dataset.preserveText !== "true") {
+                btn.textContent = btn.dataset.originalText || btn.textContent;
+            }
             btn.disabled = false;
+            btn.classList.remove("is-loading");
+            btn.removeAttribute("aria-busy");
+            delete btn.dataset.preserveText;
         }
     }
 

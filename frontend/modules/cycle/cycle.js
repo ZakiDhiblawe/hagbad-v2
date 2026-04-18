@@ -366,9 +366,9 @@
       actions.className = "group-member-actions";
       actions.appendChild(createActionNode({
         href: `cycle_detail.html?cycle_id=${cycle.id}&group_id=${cycle.group_id}`,
-        label: "Open detail",
+        label: "View history",
         tone: "secondary",
-        icon: "ti ti-arrow-up-right",
+        icon: "ti ti-history",
       }));
 
       card.appendChild(main);
@@ -394,6 +394,8 @@
     const role = await myRole(groupId, profile.id).catch(() => null);
     const canManage =
       Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator";
+    const canAdminManageLifecycle =
+      Number(group.created_by) === Number(profile.id) || role === "admin";
     const openCreateFromMenu = openMode === "create";
 
     show(qs("#open-create"), canManage);
@@ -766,6 +768,8 @@
         ? "This cycle is paused. Resume it when you are ready to reopen the current round."
         : "The current round stays open until all payments are approved and the turn payout is marked paid.");
       show(qs("#active-resume"), canManage && cycle.status === "paused");
+      show(qs("#active-cancel"), canAdminManageLifecycle && cycle.status === "active");
+      show(qs("#active-complete"), canAdminManageLifecycle && cycle.status === "active");
 
       let allPayments = [];
       let currentPayout = null;
@@ -1020,6 +1024,34 @@
         APP.setButtonLoading(qs("#active-resume"), false);
       }
     });
+    qs("#active-cancel").addEventListener("click", async () => {
+      if (!currentState.cycle) return;
+      if (!window.confirm("Cancel this cycle for now? It will be paused and can be resumed later.")) return;
+      APP.setButtonLoading(qs("#active-cancel"), true, "Canceling…");
+      try {
+        await CycleAPI.stopCycle(currentState.cycle.id, "paused");
+        APP.showToast("Cycle paused", "success");
+        await load();
+      } catch (e) {
+        APP.showToast(e.message || "Failed to cancel cycle.", "error");
+      } finally {
+        APP.setButtonLoading(qs("#active-cancel"), false);
+      }
+    });
+    qs("#active-complete").addEventListener("click", async () => {
+      if (!currentState.cycle) return;
+      if (!window.confirm("Mark this cycle complete?")) return;
+      APP.setButtonLoading(qs("#active-complete"), true, "Completing…");
+      try {
+        await CycleAPI.stopCycle(currentState.cycle.id, "completed");
+        APP.showToast("Cycle completed", "success");
+        await load();
+      } catch (e) {
+        APP.showToast(e.message || "Failed to complete cycle.", "error");
+      } finally {
+        APP.setButtonLoading(qs("#active-complete"), false);
+      }
+    });
     qs("#pending-start").addEventListener("click", async () => {
       if (!currentState.cycle) return;
       APP.setButtonLoading(qs("#pending-start"), true, "Starting…");
@@ -1107,7 +1139,7 @@
     const canManage =
       Number(group.created_by) === Number(profile.id) || role === "admin" || role === "moderator";
 
-    applyGroupWorkspace(profile, group, role, "cycles", "Cycle Detail");
+    applyGroupWorkspace(profile, group, role, "cycles", cycle.status === "completed" ? "Cycle History" : "Cycle Detail");
 
     qs("#back").addEventListener("click", () => APP.navigate(`cycles.html?group_id=${cycle.group_id}`));
     qs("#open-participants").addEventListener("click", () => {
@@ -1122,12 +1154,20 @@
 
     async function render() {
       cycle = await CycleAPI.getCycle(cycleId);
+      const isHistoryView = cycle.status === "completed";
+      document.title = `${isHistoryView ? "Cycle History" : "Cycle Detail"} | Hagbad`;
+      text(qs("#page-title-heading"), isHistoryView ? "Cycle History" : "Cycle Detail");
       text(qs("#group-name"), group.name);
-      text(qs("#subtitle"), `Cycle #${cycle.id} in group #${cycle.group_id}`);
-      text(qs("#cycle-title"), `Cycle #${cycle.id}`);
-      text(qs("#cycle-note"), canManage
-        ? "Admins and moderators can adjust pending-cycle details and control lifecycle."
-        : "View only. Lifecycle changes are restricted.");
+      text(qs("#subtitle"), isHistoryView
+        ? `Completed cycle history for group #${cycle.group_id}`
+        : `Cycle #${cycle.id} in group #${cycle.group_id}`);
+      text(qs("#cycle-title"), isHistoryView ? `Cycle #${cycle.id} history` : `Cycle #${cycle.id}`);
+      text(qs("#cycle-note"), isHistoryView
+        ? "This cycle is completed and now part of the group history. Review the participants, payments, and payouts from this finished cycle here."
+        : canManage
+          ? "Admins and moderators can adjust pending-cycle details and control lifecycle."
+          : "View only. Lifecycle changes are restricted.");
+      text(qs("#back"), isHistoryView ? "Back to history" : "Back to cycles");
 
       const grid = qs("#cycle-grid");
       grid.innerHTML = "";
@@ -1156,7 +1196,7 @@
       qs("#edit-end_date").value = cycle.end_date || "";
       syncEditFields();
 
-      show(qs("#manage"), canManage);
+      show(qs("#manage"), canManage && !isHistoryView);
       qs("#start").disabled = !(canManage && cycle.status !== "active" && cycle.status !== "completed");
       qs("#pause").disabled = !(canManage && cycle.status === "active");
       qs("#complete").disabled = !(canManage && cycle.status === "active");
@@ -1228,8 +1268,7 @@
         APP.setButtonLoading(qs("#complete"), true, "Completing…");
         try {
           await CycleAPI.stopCycle(cycleId, "completed");
-          APP.showToast("Cycle completed", "success");
-          await render();
+          APP.navigate(`cycles.html?group_id=${cycle.group_id}`);
         } catch (e) {
           APP.showToast(e.message || "Failed to complete cycle.", "error");
         } finally {

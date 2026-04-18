@@ -199,7 +199,7 @@
         submit.type = "button";
         submit.textContent = "I paid";
         submit.addEventListener("click", async () => {
-          APP.setButtonLoading(submit, true, "Submitting…");
+          APP.setButtonLoading(submit, true, "Submitting…", true);
           try {
             await PaymentAPI.submitPayment(payment.id, {});
             APP.showToast("Payment submitted for approval", "success");
@@ -220,7 +220,7 @@
         approve.type = "button";
         approve.textContent = "Approve";
         approve.addEventListener("click", async () => {
-          APP.setButtonLoading(approve, true, "Approving…");
+          APP.setButtonLoading(approve, true, "Approving…", true);
           try {
             await PaymentAPI.approvePayment(payment.id, {});
             APP.showToast("Payment approved", "success");
@@ -609,7 +609,7 @@
     if (qs("#submit-payment")) {
       qs("#submit-payment").addEventListener("click", async () => {
         setMessage("#workflow-error", "");
-        APP.setButtonLoading(qs("#submit-payment"), true, "Submitting…");
+        APP.setButtonLoading(qs("#submit-payment"), true, "Submitting…", true);
         try {
           await PaymentAPI.submitPayment(payment.id, {});
           APP.showToast("Payment submitted for approval", "success");
@@ -625,7 +625,7 @@
     if (qs("#approve-payment")) {
       qs("#approve-payment").addEventListener("click", async () => {
         setMessage("#workflow-error", "");
-        APP.setButtonLoading(qs("#approve-payment"), true, "Approving…");
+        APP.setButtonLoading(qs("#approve-payment"), true, "Approving…", true);
         try {
           await PaymentAPI.approvePayment(payment.id, {});
           APP.showToast("Payment approved", "success");
