@@ -1,0 +1,39 @@
+spring:
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:sppring_boot_backend/.env[.properties]
+  application:
+    name: hagbad-spring-backend
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+  datasource:
+    hikari:
+      maximum-pool-size: 10
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+server:
+  port: ${SERVER_PORT:8000}
+
+app:
+  database-url: ${DATABASE_URL:postgresql://postgres:admin123@localhost:5432/hagbad}
+  database-username: ${DATABASE_USERNAME:}
+  database-password: ${DATABASE_PASSWORD:}
+  secret-key: ${SECRET_KEY:CHANGE_ME__GENERATE_REAL_SECRET_CHANGE_ME_123456}
+  files-dir: ${FILES_DIR:backend/files}
