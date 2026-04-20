@@ -251,6 +251,24 @@ export async function getGroupSettings(token, groupId) {
   return request(`/group-settings/${groupId}`, { token });
 }
 
+export async function createGroupSettings(token, payload) {
+  return request("/group-settings/", {
+    method: "POST",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateGroupSettings(token, groupId, payload) {
+  return request(`/group-settings/${groupId}`, {
+    method: "PUT",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function listCyclesForGroup(token, groupId, { page = 1, size = 20 } = {}) {
   return request(`/cycles/group/${groupId}?page=${page}&size=${size}`, { token });
 }
@@ -343,6 +361,53 @@ export async function getPaymentSummary(token, cycleId) {
   return request(`/payments/summary/cycle/${cycleId}`, { token });
 }
 
+export async function getPayment(token, paymentId) {
+  return request(`/payments/${paymentId}`, { token });
+}
+
+export async function createPayment(token, payload) {
+  return request("/payments/", {
+    method: "POST",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updatePayment(token, paymentId, payload) {
+  return request(`/payments/${paymentId}`, {
+    method: "PUT",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function submitPayment(token, paymentId, payload = {}) {
+  return request(`/payments/${paymentId}/submit`, {
+    method: "PUT",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function approvePayment(token, paymentId, payload = {}) {
+  return request(`/payments/${paymentId}/approve`, {
+    method: "PUT",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deletePayment(token, paymentId) {
+  return request(`/payments/${paymentId}`, {
+    method: "DELETE",
+    token,
+  });
+}
+
 export async function listPayments(
   token,
   { cycleId, cycleMemberId = "", status = "", dueFrom = "", dueTo = "", page = 1, size = 20 }
@@ -361,6 +426,62 @@ export async function listPayments(
 
 export async function getPayoutSummary(token, cycleId) {
   return request(`/payouts/summary/cycle/${cycleId}`, { token });
+}
+
+export async function getPayout(token, payoutId) {
+  return request(`/payouts/${payoutId}`, { token });
+}
+
+export async function createPayout(token, payload) {
+  return request("/payouts/", {
+    method: "POST",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updatePayout(token, payoutId, payload) {
+  return request(`/payouts/${payoutId}`, {
+    method: "PUT",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function approvePayout(token, payoutId, payload = {}) {
+  return request(`/payouts/${payoutId}/approve`, {
+    method: "PUT",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function rejectPayout(token, payoutId, payload = {}) {
+  return request(`/payouts/${payoutId}/reject`, {
+    method: "PUT",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function payPayout(token, payoutId, payload = {}) {
+  return request(`/payouts/${payoutId}/pay`, {
+    method: "PUT",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deletePayout(token, payoutId) {
+  return request(`/payouts/${payoutId}`, {
+    method: "DELETE",
+    token,
+  });
 }
 
 export async function listPayouts(token, { cycleId, cycleMemberId = "", status = "", page = 1, size = 20 }) {
@@ -387,6 +508,22 @@ export async function listMyJoinRequests(token) {
   return request("/join-requests/mine", { token });
 }
 
+export async function decideJoinRequest(token, requestId, action) {
+  return request(`/join-requests/${requestId}/decision`, {
+    method: "POST",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action }),
+  });
+}
+
+export async function cancelJoinRequest(token, requestId) {
+  return request(`/join-requests/${requestId}`, {
+    method: "DELETE",
+    token,
+  });
+}
+
 export async function listGroupJoinRequests(token, groupId, status = "") {
   const params = new URLSearchParams();
   if (status.trim()) params.set("status", status.trim());
@@ -394,8 +531,24 @@ export async function listGroupJoinRequests(token, groupId, status = "") {
   return request(`/join-requests/group/${groupId}${suffix}`, { token });
 }
 
+export async function createInvite(token, payload) {
+  return request("/invites/", {
+    method: "POST",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function listInvites(token, groupId) {
   return request(`/invites/${groupId}`, { token });
+}
+
+export async function deleteInvite(token, inviteId) {
+  return request(`/invites/${inviteId}`, {
+    method: "DELETE",
+    token,
+  });
 }
 
 export async function redeemInvite(token, code) {

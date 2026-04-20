@@ -43,6 +43,15 @@ export const routes = {
     const query = params.toString();
     return query ? `/payments?${query}` : "/payments";
   },
+  paymentDetail(paymentId, cycleId = null, cycleMemberId = null, groupId = null) {
+    const params = new URLSearchParams();
+    if (paymentId !== undefined && paymentId !== null) params.set("payment_id", String(paymentId));
+    if (cycleId !== undefined && cycleId !== null) params.set("cycle_id", String(cycleId));
+    if (cycleMemberId !== undefined && cycleMemberId !== null) params.set("cycle_member_id", String(cycleMemberId));
+    if (groupId !== undefined && groupId !== null) params.set("group_id", String(groupId));
+    const query = params.toString();
+    return query ? `/payments/detail?${query}` : "/payments/detail";
+  },
   payouts(cycleId, cycleMemberId = null, groupId = null) {
     const params = new URLSearchParams();
     if (cycleId !== undefined && cycleId !== null) params.set("cycle_id", String(cycleId));
@@ -50,6 +59,15 @@ export const routes = {
     if (groupId !== undefined && groupId !== null) params.set("group_id", String(groupId));
     const query = params.toString();
     return query ? `/payouts?${query}` : "/payouts";
+  },
+  payoutDetail(payoutId, cycleId = null, cycleMemberId = null, groupId = null) {
+    const params = new URLSearchParams();
+    if (payoutId !== undefined && payoutId !== null) params.set("payout_id", String(payoutId));
+    if (cycleId !== undefined && cycleId !== null) params.set("cycle_id", String(cycleId));
+    if (cycleMemberId !== undefined && cycleMemberId !== null) params.set("cycle_member_id", String(cycleMemberId));
+    if (groupId !== undefined && groupId !== null) params.set("group_id", String(groupId));
+    const query = params.toString();
+    return query ? `/payouts/detail?${query}` : "/payouts/detail";
   },
   groupSettings(groupId) {
     return groupId ? `/group-settings?group_id=${groupId}` : "/group-settings";

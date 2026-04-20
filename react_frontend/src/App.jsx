@@ -13,11 +13,17 @@ import CyclesPage from "./pages/CyclesPage";
 import DashboardPage from "./pages/DashboardPage";
 import GroupDetailPage from "./pages/GroupDetailPage";
 import GroupMembersPage from "./pages/GroupMembersPage";
+import GroupReviewPage from "./pages/GroupReviewPage";
+import GroupSettingsPage from "./pages/GroupSettingsPage";
 import GroupsListPage from "./pages/GroupsListPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import PaymentDetailPage from "./pages/PaymentDetailPage";
+import PaymentsPage from "./pages/PaymentsPage";
 import ProfilePage from "./pages/ProfilePage";
+import PayoutDetailPage from "./pages/PayoutDetailPage";
+import PayoutsPage from "./pages/PayoutsPage";
 import RegisterPage from "./pages/RegisterPage";
 
 const AUTH_ROUTES = new Set([routes.login, routes.register]);
@@ -38,7 +44,9 @@ const PRIVATE_ROUTES = new Set([
   "/cycle-members",
   "/cycle-members/detail",
   "/payments",
+  "/payments/detail",
   "/payouts",
+  "/payouts/detail",
 ]);
 
 const PLACEHOLDER_ROUTES = {
@@ -189,6 +197,12 @@ export default function App() {
       case "/group-members":
         return <GroupMembersPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
 
+      case "/group-settings":
+        return <GroupSettingsPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
+
+      case "/group-review":
+        return <GroupReviewPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
+
       case "/cycles":
         return <CyclesPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
 
@@ -200,6 +214,18 @@ export default function App() {
 
       case "/cycle-members/detail":
         return <CycleMemberDetailPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
+
+      case "/payments":
+        return <PaymentsPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
+
+      case "/payments/detail":
+        return <PaymentDetailPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
+
+      case "/payouts":
+        return <PayoutsPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
+
+      case "/payouts/detail":
+        return <PayoutDetailPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
 
       case routes.profile:
         return <ProfilePage auth={auth} navigate={router.navigate} />;

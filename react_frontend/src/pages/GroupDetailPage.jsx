@@ -312,9 +312,9 @@ export default function GroupDetailPage({ auth, navigate, searchParams }) {
 
               <p className="dashboard-note mt-4 mb-0">
                 {isCreator
-                  ? "You are the creator of this group. Use the settings route when you need to update the group."
+                  ? "You are the creator of this group. Open edit mode when you need to update the group or close it."
                   : state.membershipRole
-                    ? `You belong to this group as ${state.membershipRole}. Some management pages may still require creator or admin access.`
+                    ? `You belong to this group as ${state.membershipRole}. Some management pages still depend on creator, admin, or moderator access.`
                     : "You can view this group, but member-only management pages may remain restricted."}
               </p>
             </div>
@@ -349,17 +349,6 @@ export default function GroupDetailPage({ auth, navigate, searchParams }) {
                     <span>
                       <strong>Members</strong>
                       <span>Review current members and manage roles.</span>
-                    </span>
-                  </span>
-                  <i className="ti ti-arrow-right"></i>
-                </RouteLink>
-
-                <RouteLink className="quick-link-card" to={routes.cycles(groupId)} navigate={navigate}>
-                  <span className="link-copy">
-                    <i className="ti ti-refresh"></i>
-                    <span>
-                      <strong>My Cycles</strong>
-                      <span>Open the current cycle workspace and review history.</span>
                     </span>
                   </span>
                   <i className="ti ti-arrow-right"></i>

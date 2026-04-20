@@ -5,6 +5,8 @@ export function buildGroupWorkspaceConfig({ groupId, profileId, group, membershi
     return {
       activeKey,
       isCreator: false,
+      isAdmin: false,
+      isModerator: false,
       canManageGroup: false,
       canManageCycles: false,
       canAccessAdministration: false,
@@ -16,7 +18,6 @@ export function buildGroupWorkspaceConfig({ groupId, profileId, group, membershi
   const isCreator = Number(group?.created_by) === Number(profileId);
   const isAdmin = membershipRole === "admin";
   const isModerator = membershipRole === "moderator";
-  const canUpdateGroup = isCreator;
   const canManageGroup = isCreator || isAdmin;
   const canManageCycles = isCreator || isAdmin || isModerator;
   const canAccessAdministration = isCreator || isAdmin || isModerator;
@@ -27,7 +28,6 @@ export function buildGroupWorkspaceConfig({ groupId, profileId, group, membershi
     isCreator,
     isAdmin,
     isModerator,
-    canUpdateGroup,
     canManageGroup,
     canManageCycles,
     canAccessAdministration,
@@ -49,6 +49,12 @@ export function buildGroupWorkspaceConfig({ groupId, profileId, group, membershi
             to: routes.cycles(groupId),
           },
           {
+            key: "group_members",
+            label: "Members",
+            iconClass: "ti ti-users",
+            to: routes.groupMembers(groupId),
+          },
+          {
             key: "group_back_groups",
             label: "Back to Groups",
             iconClass: "ti ti-arrow-left",
@@ -57,7 +63,7 @@ export function buildGroupWorkspaceConfig({ groupId, profileId, group, membershi
         ],
       },
       {
-        label: "Sections",
+        label: "Administration",
         items: [
           {
             key: "group_settings",
@@ -67,12 +73,6 @@ export function buildGroupWorkspaceConfig({ groupId, profileId, group, membershi
             hidden: !canAccessAdministration,
           },
           {
-            key: "group_members",
-            label: "Members",
-            iconClass: "ti ti-users",
-            to: routes.groupMembers(groupId),
-          },
-          {
             key: "group_requests",
             label: "Join Requests",
             iconClass: "ti ti-user-question",
@@ -80,30 +80,11 @@ export function buildGroupWorkspaceConfig({ groupId, profileId, group, membershi
             hidden: !canAccessAdministration || !showJoinRequests,
           },
           {
-            key: "group_invites",
-            label: "Invite",
-            iconClass: "ti ti-ticket",
-            to: routes.invites(groupId),
-            hidden: true,
-          },
-        ],
-      },
-      {
-        label: "Admin",
-        items: [
-          {
-            key: "group_update",
-            label: "Update Group",
-            iconClass: "ti ti-edit",
-            to: routes.groupSettings(groupId),
-            hidden: !canUpdateGroup,
-          },
-          {
             key: "group_add_cycle",
             label: "Add New Cycle",
             iconClass: "ti ti-plus",
             to: `${routes.cycles(groupId)}&open=create`,
-            hidden: !canManageCycles,
+            hidden: !canAccessAdministration || !canManageCycles,
           },
         ],
       },

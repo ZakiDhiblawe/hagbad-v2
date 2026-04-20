@@ -3,16 +3,22 @@ import AppShell from "../components/AppShell";
 import RouteLink from "../components/RouteLink";
 import { usePageChrome } from "../hooks/usePageChrome";
 import {
+  approvePayment,
+  approvePayout,
   createCycle,
   getGroup,
   getGroupSettings,
   getPaymentSummary,
   getPayoutSummary,
+  listPayments,
+  listPayouts,
   listCycleMembers,
   listCyclesForGroup,
   listGroupMembers,
+  payPayout,
   startCycle,
   stopCycle,
+  submitPayment,
 } from "../lib/api";
 import { buildGroupWorkspaceConfig } from "../lib/groupWorkspace";
 import { profileImageUrl } from "../lib/format";
@@ -97,6 +103,26 @@ async function fetchAllCycleMembers(token, cycleId) {
   return items;
 }
 
+async function fetchAllPayments(token, cycleId) {
+  const items = [];
+  for (let page = 1; page <= 50; page += 1) {
+    const batch = await listPayments(token, { cycleId, page, size: PAGE_SIZE });
+    items.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+  }
+  return items;
+}
+
+async function fetchAllPayouts(token, cycleId) {
+  const items = [];
+  for (let page = 1; page <= 50; page += 1) {
+    const batch = await listPayouts(token, { cycleId, page, size: PAGE_SIZE });
+    items.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+  }
+  return items;
+}
+
 function pickCurrentCycle(items) {
   const openCycles = items.filter((cycle) => cycle.status !== "completed");
   if (!openCycles.length) return null;
@@ -127,6 +153,52 @@ function buildSetupState(group, groupMembers, cycleMembers) {
   };
 }
 
+function frequencyDaysFromCycle(cycle, settings) {
+  if (cycle.frequency === "daily") return 1;
+  if (cycle.frequency === "weekly") return 7;
+  if (cycle.frequency === "monthly") return 30;
+  const customDays = Number(cycle.custom_days || settings?.custom_days || 0);
+  return customDays || 1;
+}
+
+function addDays(dateValue, days) {
+  const [year, month, day] = String(dateValue).split("-").map(Number);
+  const utcDate = new Date(Date.UTC(year, month - 1, day));
+  utcDate.setUTCDate(utcDate.getUTCDate() + days);
+  return utcDate.toISOString().slice(0, 10);
+}
+
+function computeRoundDate(cycle, settings, zeroIndex) {
+  return addDays(cycle.start_date, frequencyDaysFromCycle(cycle, settings) * zeroIndex);
+}
+
+function paymentNeedsApproval(payment) {
+  return Number(payment?.amount_paid || 0) > 0 && !payment?.paid_at;
+}
+
+function paymentState(payment) {
+  if (!payment) return "-";
+  return paymentNeedsApproval(payment) ? "awaiting approval" : payment.status;
+}
+
+function paymentTone(payment) {
+  if (payment?.status === "paid") return "admin";
+  if (paymentNeedsApproval(payment)) return "moderator";
+  if (payment?.status === "late") return "private";
+  return "member";
+}
+
+function payoutTone(status) {
+  if (status === "paid") return "admin";
+  if (status === "approved") return "moderator";
+  if (status === "rejected") return "private";
+  return "member";
+}
+
+function resolveDisplayName(member, userId) {
+  return member?.full_name || `User #${userId}`;
+}
+
 function SummaryCard({ tone, label, value, description }) {
   return (
     <article className={`members-summary-card ${tone}`}>
@@ -139,6 +211,41 @@ function SummaryCard({ tone, label, value, description }) {
 
 function ContextChip({ label, tone }) {
   return <span className={`member-context-chip ${tone}`}>{label}</span>;
+}
+
+function WorkspaceActionButton({ tone = "secondary", iconClass, label, onClick, disabled = false }) {
+  return (
+    <button className={`member-action-btn ${tone}`} type="button" disabled={disabled} onClick={onClick}>
+      <i className={iconClass}></i>
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function WorkspaceMemberCard({ tone = "member", imageSrc, name, meta, badges = [], actions = [] }) {
+  return (
+    <article className={`group-member-card tone-${tone}`}>
+      <div className="group-member-main">
+        <div className={`group-member-avatar-shell tone-${tone}`}>
+          <img className="group-member-avatar" src={imageSrc} alt={`${name} profile`} />
+        </div>
+        <div className="group-member-copy">
+          <div className="group-member-heading">
+            <h4 className="group-member-name">{name}</h4>
+            <div className="group-context-badges">
+              {badges.map((badge) => (
+                <span key={`${badge.label}-${badge.tone}`} className={`member-context-chip ${badge.tone}`}>
+                  {badge.label}
+                </span>
+              ))}
+            </div>
+          </div>
+          <p className="group-member-meta">{meta}</p>
+        </div>
+      </div>
+      {actions.length ? <div className="group-member-actions">{actions}</div> : null}
+    </article>
+  );
 }
 
 function CycleMemberCard({ member, groupMember }) {
@@ -211,14 +318,20 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
     error: "",
     group: null,
     membershipRole: null,
-    groupMembers: [],
-    settings: null,
-    currentCycle: null,
-    cycleMembers: [],
-    historyCycles: [],
-    paymentSummary: null,
-    payoutSummary: null,
-  });
+      groupMembers: [],
+      settings: null,
+      currentCycle: null,
+      cycleMembers: [],
+      historyCycles: [],
+      paymentSummary: null,
+      payoutSummary: null,
+      activePanel: {
+        currentPayout: null,
+        currentRoundDue: null,
+        currentRoundPayments: [],
+        nextPayment: null,
+      },
+    });
   const [busyAction, setBusyAction] = useState("");
   const [reloadNonce, setReloadNonce] = useState(0);
   const [createOpen, setCreateOpen] = useState(searchParams.get("open") === "create");
@@ -246,6 +359,12 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
           historyCycles: [],
           paymentSummary: null,
           payoutSummary: null,
+          activePanel: {
+            currentPayout: null,
+            currentRoundDue: null,
+            currentRoundPayments: [],
+            nextPayment: null,
+          },
         });
         return;
       }
@@ -261,6 +380,10 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
 
         const membership =
           groupMembers.find((member) => Number(member.user_id) === Number(auth.profile?.id)) || null;
+        const canManageCurrent =
+          Number(group.created_by) === Number(auth.profile?.id) ||
+          membership?.role === "admin" ||
+          membership?.role === "moderator";
         const currentCycle = pickCurrentCycle(cycles);
         const historyCycles = cycles
           .filter((cycle) => !currentCycle || Number(cycle.id) !== Number(currentCycle.id))
@@ -272,6 +395,70 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
           currentCycle ? getPaymentSummary(auth.token, currentCycle.id).catch(() => null) : Promise.resolve(null),
           currentCycle ? getPayoutSummary(auth.token, currentCycle.id).catch(() => null) : Promise.resolve(null),
         ]);
+
+        let activePanel = {
+          currentPayout: null,
+          currentRoundDue: null,
+          currentRoundPayments: [],
+          nextPayment: null,
+        };
+
+        if (currentCycle && currentCycle.status !== "pending") {
+          const sortedCycleMembers = [...cycleMembers].sort((a, b) => a.payout_order - b.payout_order);
+          const allPayments = await fetchAllPayments(auth.token, currentCycle.id).catch(() => []);
+          const myCycleMember =
+            sortedCycleMembers.find((member) => Number(member.user_id) === Number(auth.profile?.id)) || null;
+          const myPayments = myCycleMember
+            ? allPayments
+                .filter((payment) => Number(payment.cycle_member_id) === Number(myCycleMember.id))
+                .sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)))
+            : [];
+
+          const nextPayment = myPayments.find((payment) => paymentState(payment) !== "paid") || null;
+          let currentPayout = null;
+          let currentRoundDue = null;
+          let currentRoundPayments = [];
+
+          if (canManageCurrent) {
+            const payouts = await fetchAllPayouts(auth.token, currentCycle.id).catch(() => []);
+            const payoutOrderByMemberId = new Map(
+              sortedCycleMembers.map((member, index) => [Number(member.id), index])
+            );
+            currentPayout =
+              [...payouts]
+                .sort(
+                  (a, b) =>
+                    (payoutOrderByMemberId.get(Number(a.cycle_member_id)) ?? 999) -
+                    (payoutOrderByMemberId.get(Number(b.cycle_member_id)) ?? 999)
+                )
+                .find((payout) => payout.status !== "paid") || null;
+
+            if (currentPayout) {
+              currentRoundDue = computeRoundDate(
+                currentCycle,
+                settings,
+                payoutOrderByMemberId.get(Number(currentPayout.cycle_member_id)) ?? 0
+              );
+            }
+
+            currentRoundPayments = currentRoundDue
+              ? allPayments.filter((payment) => payment.due_date === currentRoundDue)
+              : [];
+          } else {
+            const remainingPayments = [...allPayments]
+              .filter((payment) => paymentState(payment) !== "paid")
+              .sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)));
+            currentRoundDue = remainingPayments[0]?.due_date || null;
+            currentRoundPayments = remainingPayments.length ? [remainingPayments[0]] : [];
+          }
+
+          activePanel = {
+            currentPayout,
+            currentRoundDue,
+            currentRoundPayments,
+            nextPayment,
+          };
+        }
 
         if (!active) return;
         setState({
@@ -286,6 +473,7 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
           historyCycles,
           paymentSummary,
           payoutSummary,
+          activePanel,
         });
       } catch (error) {
         if (!active) return;
@@ -314,6 +502,15 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
       }),
     [auth.profile?.id, groupId, state.group, state.membershipRole]
   );
+  const canManageCurrent = workspace.canManageCycles;
+  const canAdminManageLifecycle = workspace.isCreator || workspace.isAdmin;
+
+  useEffect(() => {
+    if (state.loading) return;
+    if (state.currentCycle || !canManageCurrent) {
+      setCreateOpen(false);
+    }
+  }, [canManageCurrent, state.currentCycle, state.loading]);
 
   const memberDirectory = useMemo(() => {
     const map = new Map(state.groupMembers.map((member) => [Number(member.user_id), member]));
@@ -341,6 +538,31 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
     state.groupMembers.forEach((member) => ids.add(Number(member.user_id)));
     return ids.size;
   }, [state.group, state.groupMembers]);
+  const cycleMemberById = useMemo(
+    () => new Map(state.cycleMembers.map((member) => [Number(member.id), member])),
+    [state.cycleMembers]
+  );
+  const approvedCurrentRoundCount = useMemo(
+    () =>
+      state.activePanel.currentRoundPayments.filter((payment) => paymentState(payment) === "paid").length,
+    [state.activePanel.currentRoundPayments]
+  );
+  const groupSubtitle = !state.currentCycle
+    ? "This group has no current cycle open. Create the next one when the group is ready."
+    : state.currentCycle.status === "pending"
+      ? `Pending setup for cycle #${state.currentCycle.id}`
+      : `${cycleStatusLabel(state.currentCycle.status)} cycle #${state.currentCycle.id}`;
+  const groupNote = !state.currentCycle
+    ? workspace.canManageCycles
+      ? "Create the next cycle when you are ready, then add members and start it later after the setup is complete."
+      : "There is no pending or active cycle right now. Watch this page for the next cycle window."
+    : state.currentCycle.status === "pending"
+      ? workspace.canManageCycles
+        ? "Finish the member list, confirm the payout order, and check the contribution rules before you start the cycle."
+        : "This cycle is being prepared. You will see the active round here after an admin or moderator starts it."
+      : state.currentCycle.status === "paused"
+        ? "This cycle is paused. Resume it when you want to reopen the current round."
+        : "This page shows the next payment date, the current round records, and the payout turn that closes the round.";
 
   async function reload() {
     setReloadNonce((value) => value + 1);
@@ -426,6 +648,70 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
     }
   }
 
+  async function handleSubmitCurrentPayment(paymentId) {
+    const actionKey = `submit-payment-${paymentId}`;
+    setBusyAction(actionKey);
+    try {
+      await submitPayment(auth.token, paymentId, {});
+      await reload();
+    } catch (error) {
+      setState((current) => ({
+        ...current,
+        error: error?.message || "Failed to submit payment.",
+      }));
+    } finally {
+      setBusyAction("");
+    }
+  }
+
+  async function handleApproveCurrentPayment(paymentId) {
+    const actionKey = `approve-payment-${paymentId}`;
+    setBusyAction(actionKey);
+    try {
+      await approvePayment(auth.token, paymentId, {});
+      await reload();
+    } catch (error) {
+      setState((current) => ({
+        ...current,
+        error: error?.message || "Failed to approve payment.",
+      }));
+    } finally {
+      setBusyAction("");
+    }
+  }
+
+  async function handleApproveCurrentPayout(payoutId) {
+    const actionKey = `approve-payout-${payoutId}`;
+    setBusyAction(actionKey);
+    try {
+      await approvePayout(auth.token, payoutId, {});
+      await reload();
+    } catch (error) {
+      setState((current) => ({
+        ...current,
+        error: error?.message || "Failed to approve payout.",
+      }));
+    } finally {
+      setBusyAction("");
+    }
+  }
+
+  async function handlePayCurrentPayout(payoutId) {
+    const actionKey = `pay-payout-${payoutId}`;
+    setBusyAction(actionKey);
+    try {
+      await payPayout(auth.token, payoutId, {});
+      await reload();
+    } catch (error) {
+      setState((current) => ({
+        ...current,
+        error: error?.message || "Failed to mark payout paid.",
+      }));
+    } finally {
+      setBusyAction("");
+    }
+  }
+
   return (
     <AppShell
       auth={auth}
@@ -443,13 +729,13 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
             <div className="group-inline-meta members-page-heading cycle-page-heading">
               <div>
                 <h2>{state.group?.name || "Loading group..."}</h2>
-                <p>Prepare one cycle at a time, manage the active round, and keep payments and payouts moving in order.</p>
+                <p>{groupSubtitle}</p>
               </div>
               <div className="members-header-actions">
                 <button className="btn btn-secondary" type="button" onClick={reload} disabled={state.loading}>
                   Refresh
                 </button>
-                {workspace.canManageCycles ? (
+                {workspace.canManageCycles && !state.currentCycle ? (
                   <button className="btn" type="button" onClick={() => setCreateOpen(true)}>
                     Create cycle
                   </button>
@@ -457,15 +743,11 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
               </div>
             </div>
 
-            <p className="dashboard-note mb-0">
-              {state.currentCycle
-                ? `Current cycle #${state.currentCycle.id} is ${cycleStatusLabel(state.currentCycle.status).toLowerCase()}.`
-                : "This group does not have a pending, paused, or active cycle right now."}
-            </p>
+            <p className="dashboard-note mb-0">{groupNote}</p>
             <p className="dashboard-note mb-3">
               {state.settings
-                ? `Contribution rule: ${formatMoney(state.settings.contribution_amount)} • ${state.settings.frequency}${state.settings.custom_days ? ` (${state.settings.custom_days} days)` : ""}`
-                : "Group payment rules are missing. Open settings before you start a cycle."}
+                ? `Contribution ${formatMoney(state.settings.contribution_amount)} • default rule ${state.settings.frequency}${state.settings.custom_days ? ` (${state.settings.custom_days} days)` : ""} • configure payment rules before you start the cycle`
+                : "Group rules are not configured yet. Add contribution settings before you start the next cycle."}
             </p>
 
             <div className="group-context-badges" aria-live="polite">
@@ -565,36 +847,57 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
               ) : (
                 <>
                   <SummaryCard
-                    tone={cycleStatusTone(state.currentCycle.status)}
+                    tone={state.currentCycle.status === "paused" ? "moderator" : "admin"}
                     label="Cycle status"
                     value={cycleStatusLabel(state.currentCycle.status)}
-                    description={`Cycle #${state.currentCycle.id} • ${frequencyLabel(state.currentCycle)}`}
-                  />
-                  <SummaryCard
-                    tone="member"
-                    label="Participants"
-                    value={`${state.cycleMembers.length}`}
-                    description="Members currently included in this cycle."
-                  />
-                  <SummaryCard
-                    tone={state.paymentSummary?.outstanding_amount ? "moderator" : "admin"}
-                    label="Payments"
-                    value={
-                      state.paymentSummary
-                        ? `${state.paymentSummary.paid_count} / ${state.paymentSummary.total_payments}`
-                        : "-"
+                    description={
+                      state.currentCycle.status === "paused"
+                        ? "Resume the cycle to reopen the current round."
+                        : "Only one cycle can stay open in this group at a time."
                     }
-                    description="Approved or paid payment records for this cycle."
                   />
                   <SummaryCard
-                    tone={state.payoutSummary?.remaining_amount ? "moderator" : "admin"}
-                    label="Payouts"
+                    tone={state.activePanel.nextPayment ? "member" : "total"}
+                    label="Next payment for you"
                     value={
-                      state.payoutSummary
-                        ? `${state.payoutSummary.paid_count} / ${state.payoutSummary.total_payouts}`
-                        : "-"
+                      state.activePanel.nextPayment
+                        ? formatDate(state.activePanel.nextPayment.due_date)
+                        : "All clear"
                     }
-                    description="Paid payouts out of the total cycle payout records."
+                    description={
+                      state.activePanel.nextPayment
+                        ? `${paymentState(state.activePanel.nextPayment)} • amount ${formatMoney(state.activePanel.nextPayment.amount_due)}`
+                        : "You do not have another unpaid round queued right now."
+                    }
+                  />
+                  <SummaryCard
+                    tone={state.activePanel.currentRoundDue ? "moderator" : "member"}
+                    label="Current round due"
+                    value={state.activePanel.currentRoundDue ? formatDate(state.activePanel.currentRoundDue) : "Waiting"}
+                    description={
+                      state.activePanel.currentRoundDue
+                        ? "The current round stays open until payment approvals and payout completion are done."
+                        : "No open round is waiting right now."
+                    }
+                  />
+                  <SummaryCard
+                    tone={
+                      state.activePanel.currentRoundPayments.length &&
+                      approvedCurrentRoundCount === state.activePanel.currentRoundPayments.length
+                        ? "admin"
+                        : "member"
+                    }
+                    label="Round approvals"
+                    value={
+                      state.activePanel.currentRoundPayments.length
+                        ? `${approvedCurrentRoundCount} / ${state.activePanel.currentRoundPayments.length}`
+                        : "0 / 0"
+                    }
+                    description={
+                      state.activePanel.currentRoundPayments.length
+                        ? "Approved payments for the current round."
+                        : "Payment records for the open round will appear here."
+                    }
                   />
                 </>
               )}
@@ -775,7 +1078,7 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
                   >
                     Payouts
                   </button>
-                  {workspace.canManageCycles && state.currentCycle.status === "active" ? (
+                  {canAdminManageLifecycle && state.currentCycle.status === "active" ? (
                     <>
                       <button
                         className="member-action-btn secondary"
@@ -795,7 +1098,7 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
                       </button>
                     </>
                   ) : null}
-                  {workspace.canManageCycles && state.currentCycle.status === "paused" ? (
+                  {canManageCurrent && state.currentCycle.status === "paused" ? (
                     <button
                       className="member-action-btn primary"
                       type="button"
@@ -810,69 +1113,222 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
 
               <div className="members-summary-grid cycle-summary-grid" aria-label="Active cycle summary">
                 <SummaryCard
-                  tone={cycleStatusTone(state.currentCycle.status)}
+                  tone={state.currentCycle.status === "paused" ? "moderator" : "admin"}
                   label="Cycle status"
                   value={cycleStatusLabel(state.currentCycle.status)}
-                  description="Only one cycle can stay open in this group at a time."
+                  description={
+                    state.currentCycle.status === "paused"
+                      ? "Resume the cycle to reopen the current round."
+                      : "Only one cycle can stay open in this group at a time."
+                  }
                 />
                 <SummaryCard
-                  tone="member"
-                  label="Participants"
-                  value={`${state.cycleMembers.length}`}
-                  description="Members currently included in this cycle."
+                  tone={state.activePanel.nextPayment ? "member" : "total"}
+                  label="Next payment for you"
+                  value={state.activePanel.nextPayment ? formatDate(state.activePanel.nextPayment.due_date) : "All clear"}
+                  description={
+                    state.activePanel.nextPayment
+                      ? `${paymentState(state.activePanel.nextPayment)} • amount ${formatMoney(state.activePanel.nextPayment.amount_due)}`
+                      : "You do not have another unpaid round queued right now."
+                  }
                 />
                 <SummaryCard
-                  tone={state.paymentSummary?.outstanding_amount ? "moderator" : "admin"}
-                  label="Payment progress"
+                  tone={state.activePanel.currentRoundDue ? "moderator" : "member"}
+                  label="Current round due"
+                  value={state.activePanel.currentRoundDue ? formatDate(state.activePanel.currentRoundDue) : "Waiting"}
+                  description={
+                    state.activePanel.currentRoundDue
+                      ? "The current round stays open until payment approvals and payout completion are done."
+                      : "No open round is waiting right now."
+                  }
+                />
+                <SummaryCard
+                  tone={
+                    state.activePanel.currentRoundPayments.length &&
+                    approvedCurrentRoundCount === state.activePanel.currentRoundPayments.length
+                      ? "admin"
+                      : "member"
+                  }
+                  label="Round approvals"
                   value={
-                    state.paymentSummary
-                      ? `${state.paymentSummary.paid_count} / ${state.paymentSummary.total_payments}`
-                      : "-"
+                    state.activePanel.currentRoundPayments.length
+                      ? `${approvedCurrentRoundCount} / ${state.activePanel.currentRoundPayments.length}`
+                      : "0 / 0"
                   }
                   description={
-                    state.paymentSummary
-                      ? `${formatMoney(state.paymentSummary.total_amount_paid)} collected out of ${formatMoney(state.paymentSummary.total_amount_due)}.`
-                      : "Payment summary is unavailable."
-                  }
-                />
-                <SummaryCard
-                  tone={state.payoutSummary?.remaining_amount ? "moderator" : "admin"}
-                  label="Payout progress"
-                  value={
-                    state.payoutSummary
-                      ? `${state.payoutSummary.paid_count} / ${state.payoutSummary.total_payouts}`
-                      : "-"
-                  }
-                  description={
-                    state.payoutSummary
-                      ? `${formatMoney(state.payoutSummary.paid_amount)} paid out of ${formatMoney(state.payoutSummary.total_amount)}.`
-                      : "Payout summary is unavailable."
+                    state.activePanel.currentRoundPayments.length
+                      ? "Approved payments for the current round."
+                      : "Payment records for the open round will appear here."
                   }
                 />
               </div>
 
+              {canManageCurrent && state.activePanel.currentPayout ? (
+                <div className="cycle-section-block">
+                  <div className="member-role-header cycle-section-header">
+                    <div>
+                      <h4>Current payout turn</h4>
+                      <p>Approve the payout after every current-round payment is approved, then mark it paid when the funds are given.</p>
+                    </div>
+                    <span className="member-section-count neutral">{state.activePanel.currentPayout.status}</span>
+                  </div>
+                  <div className="cycle-payout-card">
+                    {(() => {
+                      const payout = state.activePanel.currentPayout;
+                      const cycleMember = cycleMemberById.get(Number(payout.cycle_member_id));
+                      const profileMember = cycleMember
+                        ? memberDirectory.get(Number(cycleMember.user_id))
+                        : null;
+                      return (
+                        <WorkspaceMemberCard
+                          tone="moderator"
+                          imageSrc={profileImageUrl({ profile_image: profileMember?.profile_image })}
+                          name={resolveDisplayName(profileMember, cycleMember?.user_id || 0)}
+                          meta={`Turn due ${formatDate(state.activePanel.currentRoundDue)} • payout ${formatMoney(payout.amount)} • created ${formatDateTime(payout.created_at)}`}
+                          badges={[
+                            {
+                              label: cycleMember ? `Order #${cycleMember.payout_order}` : "Current turn",
+                              tone: "moderator",
+                            },
+                            { label: payout.status, tone: payoutTone(payout.status) },
+                          ]}
+                          actions={[
+                            payout.status === "pending" ? (
+                              <WorkspaceActionButton
+                                key={`approve-payout-${payout.id}`}
+                                tone="primary"
+                                iconClass="ti ti-check"
+                                label={
+                                  busyAction === `approve-payout-${payout.id}` ? "Approving..." : "Approve"
+                                }
+                                disabled={busyAction === `approve-payout-${payout.id}`}
+                                onClick={() => handleApproveCurrentPayout(payout.id)}
+                              />
+                            ) : null,
+                            payout.status === "approved" ? (
+                              <WorkspaceActionButton
+                                key={`pay-payout-${payout.id}`}
+                                tone="primary"
+                                iconClass="ti ti-cash"
+                                label={busyAction === `pay-payout-${payout.id}` ? "Paying..." : "Mark paid"}
+                                disabled={busyAction === `pay-payout-${payout.id}`}
+                                onClick={() => handlePayCurrentPayout(payout.id)}
+                              />
+                            ) : null,
+                            <WorkspaceActionButton
+                              key={`open-payout-${payout.id}`}
+                              tone="secondary"
+                              iconClass="ti ti-arrow-up-right"
+                              label="Open"
+                              onClick={() =>
+                                navigate(
+                                  routes.payoutDetail(
+                                    payout.id,
+                                    payout.cycle_id,
+                                    payout.cycle_member_id,
+                                    groupId
+                                  )
+                                )
+                              }
+                            />,
+                          ].filter(Boolean)}
+                        />
+                      );
+                    })()}
+                  </div>
+                </div>
+              ) : null}
+
               <div className="cycle-section-block">
                 <div className="member-role-header cycle-section-header">
                   <div>
-                    <h4>Current payout order</h4>
-                    <p>Participants stay ordered below so you can review the round sequence quickly.</p>
+                    <h4>{canManageCurrent ? "Current round payments" : "Your next payment"}</h4>
+                    <p>
+                      {canManageCurrent
+                        ? "Members can submit the current round here, and admins or moderators approve each payment."
+                        : "Submit this payment when it is due. A manager will approve it after confirming the contribution."}
+                    </p>
                   </div>
-                  <span className="member-section-count neutral">{state.cycleMembers.length} participants</span>
+                  <span className="member-section-count neutral">
+                    {state.activePanel.currentRoundPayments.length} payment
+                    {state.activePanel.currentRoundPayments.length === 1 ? "" : "s"}
+                  </span>
                 </div>
-                <div className="cycle-order-list" aria-label="Current cycle payout order">
-                  {state.cycleMembers.length ? (
-                    [...state.cycleMembers]
-                      .sort((a, b) => a.payout_order - b.payout_order)
-                      .map((member) => (
-                        <CycleMemberCard
-                          key={member.id}
-                          member={member}
-                          groupMember={memberDirectory.get(Number(member.user_id))}
+                <div className="cycle-round-list" aria-label="Current round payments">
+                  {state.activePanel.currentRoundPayments.length ? (
+                    state.activePanel.currentRoundPayments.map((payment) => {
+                      const cycleMember = cycleMemberById.get(Number(payment.cycle_member_id));
+                      const userId = cycleMember ? Number(cycleMember.user_id) : 0;
+                      const profileMember = memberDirectory.get(userId) || null;
+                      const isOwnPayment = Number(userId) === Number(auth.profile?.id);
+                      return (
+                        <WorkspaceMemberCard
+                          key={payment.id}
+                          tone={isOwnPayment ? "moderator" : "member"}
+                          imageSrc={profileImageUrl({ profile_image: profileMember?.profile_image })}
+                          name={
+                            isOwnPayment && canManageCurrent
+                              ? `${resolveDisplayName(profileMember, userId)} (You)`
+                              : resolveDisplayName(profileMember, userId)
+                          }
+                          meta={`Due ${formatDate(payment.due_date)} • paid ${formatMoney(payment.amount_paid)} / ${formatMoney(payment.amount_due)} • payment #${payment.id}`}
+                          badges={[{ label: paymentState(payment), tone: paymentTone(payment) }]}
+                          actions={[
+                            !canManageCurrent &&
+                            paymentState(payment) !== "awaiting approval" &&
+                            payment.status !== "paid" ? (
+                              <WorkspaceActionButton
+                                key={`submit-payment-${payment.id}`}
+                                tone="primary"
+                                iconClass="ti ti-check"
+                                label={
+                                  busyAction === `submit-payment-${payment.id}`
+                                    ? "Submitting..."
+                                    : "I paid"
+                                }
+                                disabled={busyAction === `submit-payment-${payment.id}`}
+                                onClick={() => handleSubmitCurrentPayment(payment.id)}
+                              />
+                            ) : null,
+                            canManageCurrent && paymentNeedsApproval(payment) ? (
+                              <WorkspaceActionButton
+                                key={`approve-payment-${payment.id}`}
+                                tone="primary"
+                                iconClass="ti ti-checks"
+                                label={
+                                  busyAction === `approve-payment-${payment.id}`
+                                    ? "Approving..."
+                                    : "Approve"
+                                }
+                                disabled={busyAction === `approve-payment-${payment.id}`}
+                                onClick={() => handleApproveCurrentPayment(payment.id)}
+                              />
+                            ) : null,
+                            <WorkspaceActionButton
+                              key={`open-payment-${payment.id}`}
+                              tone="secondary"
+                              iconClass="ti ti-arrow-up-right"
+                              label={canManageCurrent ? "Manage" : "Open"}
+                              onClick={() =>
+                                navigate(
+                                  routes.paymentDetail(
+                                    payment.id,
+                                    state.currentCycle.id,
+                                    payment.cycle_member_id,
+                                    groupId
+                                  )
+                                )
+                              }
+                            />,
+                          ].filter(Boolean)}
                         />
-                      ))
+                      );
+                    })
                   ) : (
                     <div className="member-empty-state">
-                      No participants are assigned to this cycle yet.
+                      {canManageCurrent
+                        ? "No payment records are open for the current round right now."
+                        : "Your next payment record will appear here when the round is ready."}
                     </div>
                   )}
                 </div>
@@ -901,7 +1357,7 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
         ) : null}
       </div>
 
-      {createOpen && workspace.canManageCycles ? (
+      {createOpen && workspace.canManageCycles && !state.currentCycle ? (
         <>
           <div className="modal-overlay" onClick={() => setCreateOpen(false)}></div>
           <div className="modal" role="dialog" aria-modal="true" aria-labelledby="create-title">

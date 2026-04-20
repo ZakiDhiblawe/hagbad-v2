@@ -277,7 +277,7 @@ export default function GroupsListPage({ auth, navigate, mode }) {
             {!isExplore ? (
               <button
                 id="open-join-code-modal"
-                className="btn portal-btn-secondary"
+                className="btn btn-sm portal-btn-secondary"
                 type="button"
                 onClick={() => {
                   setJoinCodeError("");
