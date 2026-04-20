@@ -68,6 +68,12 @@ export default function AppShell({
   children,
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const visibleSections = sidebarSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !item.hidden),
+    }))
+    .filter((section) => section.items.length > 0);
 
   function closeSidebar() {
     setSidebarOpen(false);
@@ -113,12 +119,12 @@ export default function AppShell({
 
           <nav className="sidebar-nav scroll-sidebar" aria-label="Sidebar">
             <ul id="sidebarnav">
-              {sidebarSections.map((section) => (
+              {visibleSections.map((section) => (
                 <Fragment key={section.label}>
                   <li className="nav-small-cap">
                     <span className="hide-menu">{section.label}</span>
                   </li>
-                  {section.items.filter((item) => !item.hidden).map((item) => (
+                  {section.items.map((item) => (
                     <li key={item.key} className="sidebar-item">
                       <SidebarLink
                         item={{ ...item, active: item.active || item.key === activeSidebarKey }}

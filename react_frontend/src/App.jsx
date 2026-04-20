@@ -6,8 +6,13 @@ import { API_BASE_LABEL } from "./lib/config";
 import { routes } from "./lib/routes";
 import AddGroupPage from "./pages/AddGroupPage";
 import ComingSoonPage from "./pages/ComingSoonPage";
+import CycleDetailPage from "./pages/CycleDetailPage";
+import CycleMemberDetailPage from "./pages/CycleMemberDetailPage";
+import CycleMembersPage from "./pages/CycleMembersPage";
+import CyclesPage from "./pages/CyclesPage";
 import DashboardPage from "./pages/DashboardPage";
 import GroupDetailPage from "./pages/GroupDetailPage";
+import GroupMembersPage from "./pages/GroupMembersPage";
 import GroupsListPage from "./pages/GroupsListPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
@@ -29,6 +34,11 @@ const PRIVATE_ROUTES = new Set([
   "/join-requests",
   "/invites",
   "/cycles",
+  "/cycles/detail",
+  "/cycle-members",
+  "/cycle-members/detail",
+  "/payments",
+  "/payouts",
 ]);
 
 const PLACEHOLDER_ROUTES = {
@@ -55,6 +65,22 @@ const PLACEHOLDER_ROUTES = {
   "/cycles": {
     title: "Cycles",
     description: "Cycle management is the next major workspace area to be ported into React.",
+  },
+  "/cycle-members": {
+    title: "Cycle Participants",
+    description: "Cycle participant detail is queued next after the group members and cycle workspace pages.",
+  },
+  "/cycle-members/detail": {
+    title: "Cycle Participant",
+    description: "Cycle participant detail will appear here in the React workspace.",
+  },
+  "/payments": {
+    title: "Payments",
+    description: "Payment workflow screens are still being ported into the React workspace.",
+  },
+  "/payouts": {
+    title: "Payouts",
+    description: "Payout workflow screens are still being ported into the React workspace.",
   },
 };
 
@@ -160,20 +186,41 @@ export default function App() {
       case "/groups/detail":
         return <GroupDetailPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
 
+      case "/group-members":
+        return <GroupMembersPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
+
+      case "/cycles":
+        return <CyclesPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
+
+      case "/cycles/detail":
+        return <CycleDetailPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
+
+      case "/cycle-members":
+        return <CycleMembersPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
+
+      case "/cycle-members/detail":
+        return <CycleMemberDetailPage auth={auth} navigate={router.navigate} searchParams={router.searchParams} />;
+
       case routes.profile:
         return <ProfilePage auth={auth} navigate={router.navigate} />;
 
       default: {
         const placeholder = PLACEHOLDER_ROUTES[router.pathname];
         if (placeholder) {
+          const cycleId = router.searchParams.get("cycle_id");
           const groupId = router.searchParams.get("group_id");
+          const backTo = cycleId
+            ? routes.cycleDetail(cycleId, groupId)
+            : groupId
+              ? routes.groupDetail(groupId)
+              : routes.dashboard;
           return (
             <ComingSoonPage
               auth={auth}
               navigate={router.navigate}
               title={placeholder.title}
               description={placeholder.description}
-              backTo={groupId ? routes.groupDetail(groupId) : routes.dashboard}
+              backTo={backTo}
             />
           );
         }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "../components/AppShell";
 import RouteLink from "../components/RouteLink";
 import { usePageChrome } from "../hooks/usePageChrome";
+import { buildGroupWorkspaceConfig } from "../lib/groupWorkspace";
 import {
   getGroup,
   getPaymentSummary,
@@ -170,58 +171,20 @@ export default function GroupDetailPage({ auth, navigate, searchParams }) {
 
   const group = state.group;
   const isCreator = Number(group?.created_by) === Number(auth.profile?.id);
-  const isAdmin = state.membershipRole === "admin";
-  const isModerator = state.membershipRole === "moderator";
-  const canCreateCycle = isCreator || isAdmin;
-  const showJoinRequests = group ? group.privacy !== "public" : false;
-
-  const sidebarSections = useMemo(() => {
-    if (!groupId) return undefined;
-
-    return [
-      {
-        label: "Main",
-        items: [
-          { key: "group_dashboard", label: "Dashboard", iconClass: "ti ti-layout-dashboard", to: routes.groupDetail(groupId) },
-          { key: "group_cycles", label: "My Cycles", iconClass: "ti ti-refresh", to: routes.cycles(groupId) },
-        ],
-      },
-      {
-        label: "Sections",
-        items: [
-          { key: "group_settings", label: "Settings", iconClass: "ti ti-adjustments-horizontal", to: routes.groupSettings(groupId) },
-          { key: "group_members", label: "Members", iconClass: "ti ti-users", to: routes.groupMembers(groupId) },
-          {
-            key: "group_requests",
-            label: "Join Requests",
-            iconClass: "ti ti-user-question",
-            to: routes.groupReview(groupId),
-            hidden: !showJoinRequests,
-          },
-          { key: "group_invites", label: "Invite", iconClass: "ti ti-ticket", to: routes.invites(groupId) },
-        ],
-      },
-      {
-        label: "Admin",
-        items: [
-          {
-            key: "group_update",
-            label: "Update Group",
-            iconClass: "ti ti-edit",
-            to: routes.groupSettings(groupId),
-            hidden: !isCreator,
-          },
-          {
-            key: "group_add_cycle",
-            label: "Add New Cycle",
-            iconClass: "ti ti-plus",
-            to: `${routes.cycles(groupId)}&open=create`,
-            hidden: !canCreateCycle,
-          },
-        ],
-      },
-    ];
-  }, [canCreateCycle, groupId, isCreator, showJoinRequests]);
+  const workspace = useMemo(
+    () =>
+      buildGroupWorkspaceConfig({
+        groupId,
+        profileId: auth.profile?.id,
+        group,
+        membershipRole: state.membershipRole,
+        activeKey: "group_dashboard",
+      }),
+    [auth.profile?.id, group, groupId, state.membershipRole]
+  );
+  const isAdmin = workspace.isAdmin;
+  const isModerator = workspace.isModerator;
+  const showJoinRequests = workspace.showJoinRequests;
 
   const heroStyle = groupCoverUrl(group)
     ? {
@@ -235,8 +198,8 @@ export default function GroupDetailPage({ auth, navigate, searchParams }) {
       navigate={navigate}
       miniTitle="Group workspace"
       title="Dashboard"
-      activeSidebarKey="group_dashboard"
-      sidebarSections={sidebarSections}
+      activeSidebarKey={workspace.activeKey}
+      sidebarSections={workspace.sidebarSections}
       brandTo={routes.groupDetail(groupId || 0)}
       brandSubtitle="Group workspace"
     >
@@ -386,6 +349,17 @@ export default function GroupDetailPage({ auth, navigate, searchParams }) {
                     <span>
                       <strong>Members</strong>
                       <span>Review current members and manage roles.</span>
+                    </span>
+                  </span>
+                  <i className="ti ti-arrow-right"></i>
+                </RouteLink>
+
+                <RouteLink className="quick-link-card" to={routes.cycles(groupId)} navigate={navigate}>
+                  <span className="link-copy">
+                    <i className="ti ti-refresh"></i>
+                    <span>
+                      <strong>My Cycles</strong>
+                      <span>Open the current cycle workspace and review history.</span>
                     </span>
                   </span>
                   <i className="ti ti-arrow-right"></i>

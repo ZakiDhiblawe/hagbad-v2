@@ -10,8 +10,46 @@ export const routes = {
   groupDetail(groupId) {
     return `/groups/detail?id=${groupId}`;
   },
+  cycleDetail(cycleId, groupId) {
+    const params = new URLSearchParams();
+    if (cycleId !== undefined && cycleId !== null) params.set("cycle_id", String(cycleId));
+    if (groupId !== undefined && groupId !== null) params.set("group_id", String(groupId));
+    const query = params.toString();
+    return query ? `/cycles/detail?${query}` : "/cycles/detail";
+  },
   cycles(groupId) {
     return groupId ? `/cycles?group_id=${groupId}` : "/cycles";
+  },
+  cycleMembers(cycleId, groupId) {
+    const params = new URLSearchParams();
+    if (cycleId !== undefined && cycleId !== null) params.set("cycle_id", String(cycleId));
+    if (groupId !== undefined && groupId !== null) params.set("group_id", String(groupId));
+    const query = params.toString();
+    return query ? `/cycle-members?${query}` : "/cycle-members";
+  },
+  cycleMemberDetail(memberId, cycleId, groupId) {
+    const params = new URLSearchParams();
+    if (memberId !== undefined && memberId !== null) params.set("member_id", String(memberId));
+    if (cycleId !== undefined && cycleId !== null) params.set("cycle_id", String(cycleId));
+    if (groupId !== undefined && groupId !== null) params.set("group_id", String(groupId));
+    const query = params.toString();
+    return query ? `/cycle-members/detail?${query}` : "/cycle-members/detail";
+  },
+  payments(cycleId, cycleMemberId = null, groupId = null) {
+    const params = new URLSearchParams();
+    if (cycleId !== undefined && cycleId !== null) params.set("cycle_id", String(cycleId));
+    if (cycleMemberId !== undefined && cycleMemberId !== null) params.set("cycle_member_id", String(cycleMemberId));
+    if (groupId !== undefined && groupId !== null) params.set("group_id", String(groupId));
+    const query = params.toString();
+    return query ? `/payments?${query}` : "/payments";
+  },
+  payouts(cycleId, cycleMemberId = null, groupId = null) {
+    const params = new URLSearchParams();
+    if (cycleId !== undefined && cycleId !== null) params.set("cycle_id", String(cycleId));
+    if (cycleMemberId !== undefined && cycleMemberId !== null) params.set("cycle_member_id", String(cycleMemberId));
+    if (groupId !== undefined && groupId !== null) params.set("group_id", String(groupId));
+    const query = params.toString();
+    return query ? `/payouts?${query}` : "/payouts";
   },
   groupSettings(groupId) {
     return groupId ? `/group-settings?group_id=${groupId}` : "/group-settings";

@@ -223,16 +223,155 @@ export async function listGroupMembers(token, { groupId, role = "", page = 1, si
   return request(`/group-members/?${params.toString()}`, { token });
 }
 
+export async function updateGroupMember(token, memberId, role) {
+  return request(`/group-members/${memberId}`, {
+    method: "PUT",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role }),
+  });
+}
+
+export async function deleteGroupMember(token, memberId) {
+  return request(`/group-members/${memberId}`, {
+    method: "DELETE",
+    token,
+  });
+}
+
+export async function leaveGroup(token, groupId) {
+  const params = new URLSearchParams({ group_id: String(groupId) });
+  return request(`/group-members/leave?${params.toString()}`, {
+    method: "POST",
+    token,
+  });
+}
+
+export async function getGroupSettings(token, groupId) {
+  return request(`/group-settings/${groupId}`, { token });
+}
+
 export async function listCyclesForGroup(token, groupId, { page = 1, size = 20 } = {}) {
   return request(`/cycles/group/${groupId}?page=${page}&size=${size}`, { token });
+}
+
+export async function getCycle(token, cycleId) {
+  return request(`/cycles/${cycleId}`, { token });
+}
+
+export async function createCycle(token, payload) {
+  return request("/cycles/", {
+    method: "POST",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateCycle(token, cycleId, payload) {
+  return request(`/cycles/${cycleId}`, {
+    method: "PUT",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function startCycle(token, cycleId) {
+  return request(`/cycles/${cycleId}/start`, {
+    method: "PUT",
+    token,
+  });
+}
+
+export async function stopCycle(token, cycleId, status) {
+  return request(`/cycles/${cycleId}/stop?status=${encodeURIComponent(status)}`, {
+    method: "PUT",
+    token,
+  });
+}
+
+export async function listCycleMembers(token, { cycleId, page = 1, size = 20, order = "" }) {
+  const params = new URLSearchParams({
+    cycle_id: String(cycleId),
+    page: String(page),
+    size: String(size),
+  });
+  if (order !== "" && order !== null && order !== undefined) params.set("order", String(order));
+  return request(`/cycle-members/?${params.toString()}`, { token });
+}
+
+export async function addCycleMember(token, payload) {
+  return request("/cycle-members/", {
+    method: "POST",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fillCycleMembers(token, payload) {
+  return request("/cycle-members/fill", {
+    method: "POST",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getCycleMember(token, memberId) {
+  return request(`/cycle-members/${memberId}`, { token });
+}
+
+export async function updateCycleMember(token, memberId, payload) {
+  return request(`/cycle-members/${memberId}`, {
+    method: "PUT",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteCycleMember(token, memberId) {
+  return request(`/cycle-members/${memberId}`, {
+    method: "DELETE",
+    token,
+  });
 }
 
 export async function getPaymentSummary(token, cycleId) {
   return request(`/payments/summary/cycle/${cycleId}`, { token });
 }
 
+export async function listPayments(
+  token,
+  { cycleId, cycleMemberId = "", status = "", dueFrom = "", dueTo = "", page = 1, size = 20 }
+) {
+  const params = new URLSearchParams({
+    cycle_id: String(cycleId),
+    page: String(page),
+    size: String(size),
+  });
+  if (cycleMemberId) params.set("cycle_member_id", String(cycleMemberId));
+  if (status.trim()) params.set("status", status.trim());
+  if (dueFrom) params.set("due_from", dueFrom);
+  if (dueTo) params.set("due_to", dueTo);
+  return request(`/payments/?${params.toString()}`, { token });
+}
+
 export async function getPayoutSummary(token, cycleId) {
   return request(`/payouts/summary/cycle/${cycleId}`, { token });
+}
+
+export async function listPayouts(token, { cycleId, cycleMemberId = "", status = "", page = 1, size = 20 }) {
+  const params = new URLSearchParams({
+    cycle_id: String(cycleId),
+    page: String(page),
+    size: String(size),
+  });
+  if (cycleMemberId) params.set("cycle_member_id", String(cycleMemberId));
+  if (status.trim()) params.set("status", status.trim());
+  return request(`/payouts/?${params.toString()}`, { token });
 }
 
 export async function createJoinRequest(token, payload) {
