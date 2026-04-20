@@ -27,7 +27,7 @@
         if (body.kind === "json") {
             const d = body.data;
 
-            // FastAPI often returns {"detail": "..."} for HTTP errors
+            // Our backends return {"detail": "..."} for HTTP errors
             if (d && typeof d.detail === "string") return d.detail;
 
             // For validation errors, detail may be an array

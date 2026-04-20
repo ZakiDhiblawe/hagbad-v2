@@ -2,6 +2,13 @@
 
 Static HTML, CSS, and JavaScript frontend for Hagbad.
 
+This frontend is designed to work with either backend implementation in this repo:
+
+- `backend/` (FastAPI)
+- `sppring_boot_backend/` (Spring Boot)
+
+As long as one compatible backend is running and exposing the same API routes plus `/files/**`, the frontend should work without code changes.
+
 ## Local config without pushing
 
 This frontend is plain static HTML/JS, so a real browser `.env` file is not used directly.
@@ -17,7 +24,7 @@ If you ever remove it, recreate it by copying `frontend/js/config.local.example.
 
 ## Run locally
 
-1. Start the backend.
+1. Start either backend.
 2. Edit `frontend/js/config.local.js` and set your backend URL.
 3. Serve the frontend:
 
@@ -43,7 +50,7 @@ That means:
 
 ## Backend URL examples
 
-Local development:
+Local development with either backend on port `8000`:
 
 ```js
 window.HAGBAD_CONFIG = {
@@ -77,6 +84,7 @@ window.HAGBAD_CONFIG = {
 - Use `frontend/js/config.local.js` for your machine-specific backend URL.
 - Frontend API calls should use `APP.buildApiUrl("/path")`.
 - The landing page checks backend root route `/` for connection status.
+- Both backends are intended to support the same frontend contract, so switching backends should only require changing which server is running at the configured base URL.
 
 ## Structure
 

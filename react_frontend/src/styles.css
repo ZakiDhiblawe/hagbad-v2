@@ -1,0 +1,77 @@
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.sidebar-toggle-button {
+  background: transparent;
+  border: 0;
+}
+
+.user-menu-link.primary-action {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.group-empty-state {
+  padding: 1.5rem;
+  border: 1px dashed rgba(16, 40, 82, 0.14);
+  border-radius: 1.25rem;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.group-empty-state h4 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+.group-empty-state p {
+  margin: 0;
+  color: #5a6a85;
+}
+
+.portal-modal[hidden],
+.portal-modal-overlay[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 1199.98px) {
+  .react-page-wrapper .left-sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    bottom: 0;
+    z-index: 1040;
+    transition: left 0.24s ease;
+  }
+
+  .react-page-wrapper.sidebar-open .left-sidebar {
+    left: 0;
+  }
+
+  .react-page-wrapper.sidebar-open::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 24, 48, 0.45);
+    z-index: 1030;
+  }
+}
