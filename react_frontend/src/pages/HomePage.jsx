@@ -36,12 +36,25 @@ export default function HomePage({ navigate, health, isAuthenticated }) {
             </nav>
 
             <div className="site-nav-actions">
-              <RouteLink className="btn portal-btn-secondary" to={routes.login} navigate={navigate}>
-                Sign in
-              </RouteLink>
-              <RouteLink className="btn portal-btn-primary" to={routes.register} navigate={navigate}>
-                Create account
-              </RouteLink>
+              {isAuthenticated ? (
+                <>
+                  <RouteLink className="btn portal-btn-secondary" to={routes.myGroups} navigate={navigate}>
+                    My groups
+                  </RouteLink>
+                  <RouteLink className="btn portal-btn-primary" to={routes.dashboard} navigate={navigate}>
+                    Dashboard
+                  </RouteLink>
+                </>
+              ) : (
+                <>
+                  <RouteLink className="btn portal-btn-secondary" to={routes.login} navigate={navigate}>
+                    Sign in
+                  </RouteLink>
+                  <RouteLink className="btn portal-btn-primary" to={routes.register} navigate={navigate}>
+                    Create account
+                  </RouteLink>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -61,20 +74,25 @@ export default function HomePage({ navigate, health, isAuthenticated }) {
                 </p>
 
                 <div className="hero-actions">
-                  <RouteLink
-                    className="btn portal-btn-primary"
-                    to={isAuthenticated ? routes.dashboard : routes.register}
-                    navigate={navigate}
-                  >
-                    {isAuthenticated ? "Open dashboard" : "Start a new group"}
-                  </RouteLink>
-                  <RouteLink
-                    className="btn portal-btn-secondary"
-                    to={isAuthenticated ? routes.dashboard : routes.login}
-                    navigate={navigate}
-                  >
-                    {isAuthenticated ? "Continue in workspace" : "Sign in to your workspace"}
-                  </RouteLink>
+                  {isAuthenticated ? (
+                    <>
+                      <RouteLink className="btn portal-btn-primary" to={routes.dashboard} navigate={navigate}>
+                        Dashboard
+                      </RouteLink>
+                      <RouteLink className="btn portal-btn-secondary" to={routes.myGroups} navigate={navigate}>
+                        My groups
+                      </RouteLink>
+                    </>
+                  ) : (
+                    <>
+                      <RouteLink className="btn portal-btn-primary" to={routes.register} navigate={navigate}>
+                        Start a new group
+                      </RouteLink>
+                      <RouteLink className="btn portal-btn-secondary" to={routes.login} navigate={navigate}>
+                        Sign in to your workspace
+                      </RouteLink>
+                    </>
+                  )}
                   <span className={`status-chip ${statusClass(health.kind)}`} aria-live="polite">
                     {health.label}
                   </span>
@@ -179,7 +197,7 @@ export default function HomePage({ navigate, health, isAuthenticated }) {
                 <i className="ti ti-stack-2"></i>
               </div>
               <h3>One frontend, compatible backends</h3>
-              <p>The React frontend now uses the same UI language and shared API contract as the static frontend.</p>
+              <p>The static frontend can connect to either the FastAPI or Spring Boot backend when the shared API contract is in place.</p>
             </article>
             <article className="feature-card">
               <div className="feature-icon">
@@ -194,7 +212,8 @@ export default function HomePage({ navigate, health, isAuthenticated }) {
             <h2 className="section-heading">A public entry point, then a focused dashboard.</h2>
             <p className="section-copy">
               Visitors start on this landing page. Once authenticated, they move directly into the dashboard
-              workspace with sidebar navigation, quick actions, and profile visibility.
+              workspace with sidebar navigation, quick actions, and profile visibility. That gives you a cleaner
+              deployment story for production and a more professional first impression before sign-in.
             </p>
           </section>
         </div>
@@ -213,7 +232,7 @@ export default function HomePage({ navigate, health, isAuthenticated }) {
                   </span>
                 </RouteLink>
                 <p className="landing-footer-copy">
-                  The React frontend now mirrors the static workspace styling while staying compatible with either backend.
+                  A cleaner front door for members before sign-in, with a focused dashboard waiting after authentication.
                 </p>
               </div>
 
@@ -234,7 +253,7 @@ export default function HomePage({ navigate, health, isAuthenticated }) {
               <div>
                 <h3 className="landing-footer-title">Deployment ready</h3>
                 <p className="landing-footer-copy">
-                  Public pages stay separate from the authenticated workspace, which keeps the entry flow clean.
+                  Public pages live separately from the authenticated workspace, which gives you a more professional production flow.
                 </p>
               </div>
             </div>

@@ -1261,6 +1261,10 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
                       const userId = cycleMember ? Number(cycleMember.user_id) : 0;
                       const profileMember = memberDirectory.get(userId) || null;
                       const isOwnPayment = Number(userId) === Number(auth.profile?.id);
+                      const canSubmitOwnPayment =
+                        isOwnPayment &&
+                        paymentState(payment) !== "awaiting approval" &&
+                        payment.status !== "paid";
                       return (
                         <WorkspaceMemberCard
                           key={payment.id}
@@ -1274,9 +1278,7 @@ export default function CyclesPage({ auth, navigate, searchParams }) {
                           meta={`Due ${formatDate(payment.due_date)} • paid ${formatMoney(payment.amount_paid)} / ${formatMoney(payment.amount_due)} • payment #${payment.id}`}
                           badges={[{ label: paymentState(payment), tone: paymentTone(payment) }]}
                           actions={[
-                            !canManageCurrent &&
-                            paymentState(payment) !== "awaiting approval" &&
-                            payment.status !== "paid" ? (
+                            canSubmitOwnPayment ? (
                               <WorkspaceActionButton
                                 key={`submit-payment-${payment.id}`}
                                 tone="primary"
