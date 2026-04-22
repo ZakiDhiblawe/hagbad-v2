@@ -104,8 +104,15 @@ export function useAuth() {
       })
       .catch((error) => {
         if (!active) return;
-        clearSession();
-        setSessionError(error?.message || "Failed to restore your session.");
+        if (error?.status === 401) {
+          clearSession();
+          setSessionError(error?.message || "Please sign in again.");
+          return;
+        }
+
+        setSessionError(
+          error?.message || "Backend is unreachable right now. Your saved session is still on this browser."
+        );
       })
       .finally(() => {
         if (active) setBootstrapping(false);
