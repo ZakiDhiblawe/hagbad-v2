@@ -29,17 +29,10 @@ public final class PaymentRules {
         if (amountPaid.compareTo(amountDue) >= 0 && paidAt != null) {
             return new NormalizedPayment(PaymentStatus.paid, paidAt);
         }
-        return new NormalizedPayment(resolvePaymentStatus(amountDue, amountPaid, dueDate), null);
-    }
-
-    public static PaymentStatus resolvePaymentStatus(BigDecimal amountDue, BigDecimal amountPaid, LocalDate dueDate) {
-        if (amountPaid.compareTo(amountDue) >= 0) {
-            return PaymentStatus.paid;
-        }
-        if (dueDate.isBefore(LocalDate.now())) {
-            return PaymentStatus.late;
-        }
-        return PaymentStatus.due;
+        return new NormalizedPayment(
+            dueDate.isBefore(LocalDate.now()) ? PaymentStatus.late : PaymentStatus.due,
+            null
+        );
     }
 
     public static boolean isPendingApproval(PaymentEntity entity) {

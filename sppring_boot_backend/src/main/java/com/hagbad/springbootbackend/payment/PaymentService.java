@@ -250,6 +250,10 @@ public class PaymentService {
         CycleEntity cycle = cycleSupportService.requireCycle(payment.getCycleId());
         ensureCycleCanAcceptPayments(cycle);
 
+        if (syncPaymentStatus(payment)) {
+            payment = paymentRepository.save(payment);
+        }
+
         CycleMemberEntity cycleMember = cycleSupportService.requireCycleMember(payment.getCycleMemberId());
         if (!cycleMember.getUserId().equals(currentUser.id())) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Only the payment owner can submit this payment");
@@ -301,6 +305,10 @@ public class PaymentService {
             "Only a group admin or moderator can manage payments"
         );
         ensureCycleCanAcceptPayments(cycle);
+
+        if (syncPaymentStatus(payment)) {
+            payment = paymentRepository.save(payment);
+        }
 
         if (payment.getStatus() == PaymentStatus.paid || payment.getPaidAt() != null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "This payment is already approved");
